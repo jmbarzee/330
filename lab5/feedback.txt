@@ -1,0 +1,25 @@
+        Correct output:
+1.0
+true
+Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0),Pixel(10.0,10.0,10.0)
+Pixel(0,0,0),Pixel(0,0,0),Pixel(0,0,0),Pixel(0,0,0),Pixel(0,0,0),Pixel(0,0,0),Pixel(0,0,0),Pixel(0,0,0),Pixel(0,0,0)
+3
+5.0
+Person("Test",2012,:ink,Person("Test",2012,:fusia,Unknown(),Unknown()),Person("Test",2012,:brown,Unknown(),Unknown()))
+Person("TestName",2012,:ink,Person("BenName",2012,:fusia,Unknown(),Unknown()),Person("Kaitlyn Name",2012,:brown,Unknown(),Unknown()))
+Any[:ink,:fusia,:brown]
+
+        Your output:
+
+        Failed tests:
+1. 1 point. area
+2. 1 point. in-shape
+3. 1 point. greyscale
+4. 1 point. invert
+5. 1 point. count_persons
+6. 1 point. average_age
+7. 1 point. tree_map
+8. 1 point. last_name
+9. 1 point. eye-colors
+        Grade:
+0 out of 9

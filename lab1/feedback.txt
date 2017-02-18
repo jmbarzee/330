@@ -1,0 +1,16 @@
+        Correct output:
+41
+1.047
+1
+-0.305
+
+        Your output:
+
+        Failed tests:
+1. 1 point. sum-coins function general test.
+2. 1 point. degrees-to-radians function general test. Make sure to use the Racket literal for the value of pi.
+3. 1 point. sign function general test.
+4. 1 point. new-sin function general test.
+
+        Grade:
+0 out of 4

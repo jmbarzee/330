@@ -1,0 +1,24 @@
+        Correct output:
+RudInt.Binop(+,RudInt.Num(1),RudInt.Num(2))
+RudInt.Binop(-,RudInt.Num(1),RudInt.Num(2))
+Error
+Error
+-1
+2
+Error
+Error
+
+        Your output:
+
+        Failed tests:
+1. 1 point. parse (+ 1 2)
+2. 1 point. parse (- 1 2)
+3. 1 point. parse + 1 2
+4. 1 point. parse (a)
+5. 1 point. calc (- 1)
+6. 1 point. calc (* 1 2)
+7. 1 point. calc (collatz -1)
+8. 1 point. calc (/ 1 0)
+
+        Grade:
+0 out of 8
