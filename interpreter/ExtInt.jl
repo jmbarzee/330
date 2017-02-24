@@ -95,23 +95,9 @@ type FunAppNode <: OWL
 end
 ==(x::FunAppNode, y::FunAppNode) = x.fun_expr == y.fun_expr && x.args == y.args
 #
-# ========================Environments==========================
-#
-abstract Environment
-
-type mtEnv <: Environment
-end
-==(x::mtEnv, y::mtEnv) = true
-
-type CEnvironment <: Environment
-  name::Symbol
-  value::Real
-  parent::Environment
-end
-==(x::CEnvironment, y::CEnvironment) = x.name == y.name && x.value == y.value && x.parent == y.parent
-#
 # ========================Return Values===========================
 #
+abstract Environment
 abstract RetVal
 
 type NumVal <: RetVal
@@ -127,7 +113,21 @@ type ClosureVal <: RetVal
   env::Environment  # this is the environment at definition time!
 end
 ==(x::ClosureVal, y::ClosureVal) = x.param == y.param && x.body == y.body && x.env == y.env
+
 #
+# ========================Environments==========================
+#
+
+type mtEnv <: Environment
+end
+==(x::mtEnv, y::mtEnv) = true
+
+type CEnvironment <: Environment
+  name::Symbol
+  value::RetVal
+  parent::Environment
+end
+==(x::CEnvironment, y::CEnvironment) = x.name == y.name && x.value == y.value && x.parent == y.parent#
 # =======================Parseing============================
 #
 function parse( expr::Any )
@@ -141,6 +141,7 @@ function parse( expr::Real )
 end
 
 function parse( expr::Symbol )
+  checkReserved(expr)
   return IdNode( expr )
 end
 
@@ -288,23 +289,30 @@ function calc( owl::IdNode, env::Environment)
 end
 
 function calc( owl::NumNode, env::Environment)
-  return owl.n
+  return NumVal( owl.n )
 end
 
 function calc( owl::UnOpNode, env::Environment)
-  return owl.op( calc( owl.val , env ) )
+  val = calc( owl.val , env )
+  if typeof(val) != NumVal
+    throw(LispError("Can not Handle Non NumVals"))
+  end
+  return NumVal( owl.op( val.n ) )
 end
 
 function calc( owl::BinOpNode, env::Environment )
   lhs = calc( owl.lhs, env )
   rhs = calc( owl.rhs, env )
-  if owl.op == bDict[:/] && rhs == 0
+  if typeof(lhs) != NumVal
+    throw(LispError("Can not Handle Non NumVals"))
+  elseif typeof(rhs) != NumVal
+    throw(LispError("Can not Handle Non NumVals"))
+  elseif owl.op == bDict[:/] && rhs == 0
     throw(LispError("Can not Divide by zero"))
-  end
-  if owl.op == bDict[:%] && rhs == 0
+  elseif owl.op == bDict[:%] && rhs == 0
     throw(LispError("Can not Mod by zero"))
   end
-  return owl.op( lhs, rhs )
+  return NumVal( owl.op( lhs.n, rhs.n ))
 end
 
 function calc( owl::If0Node, env::Environment )

@@ -1,9 +1,9 @@
 
-include("Error.jl")
-include("Lexer.jl")
 using ExtInt, Base.Test, Error, Lexer.lex
 
 NumNode = ExtInt.NumNode
+
+==(Error.LispError, Error.LispError)
 
 
 @testset "ExtInt" begin
