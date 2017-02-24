@@ -14,7 +14,7 @@ NumNode = ExtInt.NumNode
     @test_throws LispError ExtInt.parse([1, 2])
     @test_throws LispError ExtInt.parse(['a'])
 
-    @test ExtInt.parse([:+, 1, 2]) == ExtInt.BinOpNode(+, NumNode(1), NumNode(2))
+    @test ExtInt.parse([:+, 1, 2]) == ExtInt.AddNode([NumNode(1), NumNode(2)])
     @test ExtInt.parse([:/, 1, 2]) == ExtInt.BinOpNode(/, NumNode(1), NumNode(2))
     @test ExtInt.parse([:*, 1, 2]) == ExtInt.BinOpNode(*, NumNode(1), NumNode(2))
     @test ExtInt.parse([:-, 1, 2]) == ExtInt.BinOpNode(-, NumNode(1), NumNode(2))
