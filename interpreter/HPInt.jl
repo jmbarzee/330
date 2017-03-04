@@ -1,40 +1,60 @@
-module TransInt
+module HPInt
 
 push!(LOAD_PATH, ".")
 
 using Error
 using Lexer
+using Images
+using Cairo
 import Base.==
 
 export parse, calc, analyze
-export NumVal, ClosureVal
+export NumVal, ClosureVal, MatrixVal
 
 export interp, exec
 #
-# ===================================================
-#
-function collatz( n::Real )
-	if ( n > 0 )
-		return collatz_helper( n, 0 )
-	else
-		throw( LispError("Go away mr collatz"))
-	end
-end
-
-function collatz_helper( n::Real, num_iters::Int )
-	if n == 1
-		return num_iters
-	end
-	if mod(n,2)==0
-		return collatz_helper( n/2, num_iters+1 )
-	else
-		return collatz_helper( 3*n+1, num_iters+1 )
-	end
-end
-#
-# ===================================================
+# ========================Abstracts===========================
 #
 abstract OWL
+abstract Environment
+abstract RetVal
+#
+# ========================Return Values===========================
+#
+type NumVal <: RetVal
+	n::Real
+end
+==(x::NumVal, y::NumVal) = x.n == y.n
+==(x::NumVal, y::Real) = x.n == y
+==(x::Real, y::NumVal) = x == y.n
+
+type ClosureVal <: RetVal
+	params::Array{Symbol}
+	body::OWL
+	env::Environment  # this is the environment at definition time!
+end
+==(x::ClosureVal, y::ClosureVal) = x.params == y.params && x.body == y.body && x.env == y.env
+
+type MatrixVal <: RetVal
+	mat::Array{Float32,2}
+end
+==(x::MatrixVal, y::MatrixVal) = x.mat == y.mat
+#
+# ========================Environments==========================
+#
+type mtEnv <: Environment
+end
+==(x::mtEnv, y::mtEnv) = true
+
+type CEnvironment <: Environment
+	name::Symbol
+	value::RetVal
+	parent::Environment
+end
+==(x::CEnvironment, y::CEnvironment) = x.name == y.name && x.value == y.value && x.parent == y.parent
+#
+# ===================================================
+#
 
 type IdNode <: OWL
 	name::Symbol
@@ -104,49 +124,144 @@ type FunAppNode <: OWL
 	args::Array{OWL}
 end
 ==(x::FunAppNode, y::FunAppNode) = x.func == y.func && x.args == y.args
+type MatNode <: OWL
+	mat::Array{Float32,2}
+end
+==(x::MatNode, y::MatNode) = arrayEquals(x.mat, y.mat)
+type MatOpNode <: OWL
+	op::Function
+	mat::OWL
+end
+==(x::MatOpNode, y::MatOpNode) = x.op == y.op && x.mat == y.mat
+type MatSaveNode <: OWL
+	mat::OWL
+	path::String
+end
+==(x::MatSaveNode, y::MatSaveNode) = x.mat == y.mat && x.path == y.path
+type MatLoadNode <: OWL
+	path::String
+end
+==(x::MatLoadNode, y::MatLoadNode) = x.path == y.path
+type RenderTextNode <: OWL
+    text::AbstractString
+    xpos::OWL
+    ypos::OWL
+end
+==(x::RenderTextNode, y::RenderTextNode) = x.text == y.text && x.xpos == y.xpos && x.ypos == y.ypos
 #
-# ========================Return Values===========================
+# ========================Primatives===========================
 #
-abstract Environment
-abstract RetVal
+function collatz( n::Real )
+	if ( n > 0 )
+		return collatz_helper( n, 0 )
+	else
+		throw( LispError("Go away mr collatz"))
+	end
+end
 
-type NumVal <: RetVal
-	n::Real
+function collatz_helper( n::Real, num_iters::Int )
+	if n == 1
+		return num_iters
+	end
+	if mod(n,2)==0
+		return collatz_helper( n/2, num_iters+1 )
+	else
+		return collatz_helper( 3*n+1, num_iters+1 )
+	end
 end
-==(x::NumVal, y::NumVal) = x.n == y.n
-==(x::NumVal, y::Real) = x.n == y
-==(x::Real, y::NumVal) = x == y.n
+#-------------------------------------------------------------
+function simple_load( img_path::AbstractString )
+  im = Images.load( img_path );
+  tmp = Images.separate(im);
+  d = Images.data( tmp );
+  d = d[:,:,1];  # just the r channel
+  d = convert( Array{Float32,2}, d );
+  return d    
+end
 
-type ClosureVal <: RetVal
-	params::Array{Symbol}
-	body::OWL
-	env::Environment  # this is the environment at definition time!
+function simple_save( output::Array, img_path::AbstractString )
+    output[ output .> 1.0 ] = 1.0
+    output[ output .< 0.0 ] = 0.0
+    tmpc = convert( Array{UInt32,2}, floor(output*255.0) )
+    tmp_output =  tmpc + tmpc*256 + tmpc*65536 + 0xff000000
+    c2 = CairoImageSurface( transpose(tmp_output), Cairo.FORMAT_ARGB32 )
+    write_to_png( c2, ae.fn )
+    return 42
 end
-==(x::ClosureVal, y::ClosureVal) = x.params == y.params && x.body == y.body && x.env == y.env
-#
-# ========================Environments==========================
-#
-type mtEnv <: Environment
-end
-==(x::mtEnv, y::mtEnv) = true
+#-------------------------------------------------------------
+function render_text( text_str::AbstractString, xpos, ypos )
 
-type CEnvironment <: Environment
-	name::Symbol
-	value::RetVal
-	parent::Environment
+  data = Matrix{UInt32}( 256, 256 );
+  c = CairoImageSurface( data, Cairo.FORMAT_ARGB32 );
+  cr = CairoContext( c );
+
+  set_source_rgb( cr, 1., 1., 1. );
+  rectangle( cr, 0., 0., 256., 256. );
+  fill( cr );
+
+  set_source_rgb( cr, 0, 0, 0 );
+  select_font_face( cr, "Sans", Cairo.FONT_SLANT_NORMAL,
+                    Cairo.FONT_WEIGHT_BOLD );
+  set_font_size( cr, 90.0 );
+
+  move_to( cr, xpos, ypos );
+  show_text( cr, text_str );
+
+  # tmp is an Array{UInt32,2}
+  tmp = cr.surface.data;
+
+  # grab just the blue channel, and convert the array to an array of floats
+  tmp2 = convert( Array{Float32,2}, tmp & 0x000000ff ) / 255.0;
+  tmp2 = convert( Array{Float32,2}, tmp2 );
+
+  return tmp2
 end
-==(x::CEnvironment, y::CEnvironment) = x.name == y.name && x.value == y.value && x.parent == y.parent
+#-------------------------------------------------------------
+function emboss( img::Array )
+  f = [ -2. -1. 0.
+        -1.  1. 1.
+         0.  1. 1. ];
+  f = convert( Array{Float32,2}, f );
+
+  es = conv2( f, img );
+  es = es[1:256,1:256];
+  return es    
+end
+#-------------------------------------------------------------
+function drop_shadow( img::Array )
+  foo = convert( Array{Float32,2}, gaussian2d(5.0,[25,25]) );
+  foo = foo / maximum(foo);
+  ds = conv2( foo, img );
+  ds = ds[13:256+12,13:256+12];
+  ds = ds / sum(foo);
+  return ds
+end
+#-------------------------------------------------------------
+# assumes img is black-on-white
+function inner_shadow( img::Array )
+  foo = convert( Array{Float32,2}, gaussian2d(5.0,[25,25]) );
+  foo = foo / maximum(foo);
+  is = conv2( foo, 1.0-img );
+  is = is[8:251+12,8:251+12];
+  is = is / sum(foo);
+  is = max( is, img );
+  return is
+end
 #
 # =======================Parseing============================
 #
 function parse(expr::Any)
 	#println("parseing Any")
-	#println(expr)
-	#println(typeof(expr))
+	println(expr)
+	println(typeof(expr))
 	throw(LispError("Tried to parse variable of type ::Any"))
 end
 
 function parse( expr::Real )
+	return NumNode( expr )
+end
+
+function parse( expr::Int64 )
 	return NumNode( expr )
 end
 
@@ -248,16 +363,92 @@ function parse(expr::Array{})
 		else
 			throw(LispError("Improper number of arguments to \"and\""))
 		end
-	elseif isa(key, Array)
-		lambda = parse(key)
-		if typeof(lambda) != FunDefNode
-			throw(LispError("Failed lambda verification"))
-		else
-			args = parseMany(expr[2:length(expr)])
-			if length(lambda.params) != length(args)
-				throw(LispError("Failed lambda verification (call and signature don't match)"))
+	elseif key == :simple_load
+		if length(expr) == 2
+			path = expr[2]
+			if typeof(path) != String
+				throw(LispError("Must pass string to \"simple_load\" as second param"))
 			end
-			return FunAppNode(lambda, args)
+			return MatLoadNode(path)
+		else
+			throw(LispError("Improper number of arguments to \"simple_load\""))
+		end
+	elseif key == :simple_save
+		if length(expr) == 3
+			path = expr[3]
+			if typeof(path) != String
+				throw(LispError("Must pass string to \"simple_save\" as second param"))
+			end
+			mat = parse(expr[2])
+			return MatSaveNode(mat, path)
+		else
+			throw(LispError("Improper number of arguments to \"simple_save\""))
+		end
+	elseif key == :render_text
+		if length(expr) == 4
+			text = expr[2]
+			if typeof(text) != String
+				throw(LispError("Must pass string to \"render_text\" as first param"))
+			end
+			xpos = parse(expr[3])
+			ypos = parse(expr[4])
+			return RenderTextNode(text, xpos, ypos)
+		else
+			throw(LispError("Improper number of arguments to \"render_text\""))
+		end
+	elseif key == :emboss
+		if length(expr) == 2
+			mat = parse(expr[2])
+			return MatOpNode(emboss, mat)
+		else
+			throw(LispError("Improper number of arguments to \"emboss\""))
+		end
+	elseif key == :drop_shadow
+		if length(expr) == 2
+			mat = parse(expr[2])
+			return MatOpNode(drop_shadow, mat)
+		else
+			throw(LispError("Improper number of arguments to \"drop_shadow\""))
+		end
+	elseif key == :inner_shadow
+		if length(expr) == 2
+			mat = parse(expr[2])
+			return MatOpNode(inner_shadow, mat)
+		else
+			throw(LispError("Improper number of arguments to \"inner_shadow\""))
+		end
+	elseif key == :min
+		if length(expr) == 3
+			param1 = parse(expr[2])
+			param2 = parse(expr[3])
+			return BinOpNode(#=TODO: check=# min, param1, param2)
+		else
+			throw(LispError("Improper number of arguments to \"min\""))
+		end
+	elseif key == :max
+		if length(expr) == 3
+			param1 = parse(expr[2])
+			param2 = parse(expr[3])
+			return BinOpNode(#=TODO: check=# max, param1, param2)
+		else
+			throw(LispError("Improper number of arguments to \"max\""))
+		end
+	elseif isa(key, Array)
+		if ndims(key) == 1
+			lambda = parse(key)
+			if typeof(lambda) != FunDefNode
+				throw(LispError("Failed lambda verification"))
+			else
+				args = parseMany(expr[2:length(expr)])
+				if length(lambda.params) != length(args)
+					throw(LispError("Failed lambda verification (call and signature don't match)"))
+				end
+				return FunAppNode(lambda, args)
+			end
+		elseif ndims(key) == 2
+			return MatNode(key)
+		else
+			throw(LispError("pased a array with > 3 dims to parse"))
 		end
 	elseif typeof(key) == Symbol
 		lambdaId = parseId(key)
@@ -297,8 +488,11 @@ function parseWithBindings( binds::Array{} )
 	end
 	return bindings
 end
-
-reserved = [:+, :-, :*, :/, :mod, :collatz, :if0, :with, :lambda, :and]
+reserved = [:+, :-, :*, :/, :mod,
+ 	:collatz, :if0, :with, :lambda, :and,
+ 	:simple_load, :simple_save, :render_text,
+ 	:emboss, :drop_shadow, :inner_shadow,
+ 	:min, :max]
 function checkReserved(id::Symbol)
 	if length( find( a -> a == id, reserved )) != 0
 		throw(LispError("Reserved Word"))
@@ -399,6 +593,25 @@ function analyze(owl::FunAppNode)
 	end
 	return owl
 end
+function analyze(owl::MatOpNode)
+	owl.mat = analyze(owl.mat)
+	return owl
+end
+function analyze(owl::MatSaveNode)
+	owl.mat = analyze(owl.mat)
+	return owl
+end
+function analyze(owl::MatLoadNode)
+	return owl
+end
+function analyze(owl::RenderTextNode)
+	owl.xpos = analyze(owl.xpos)
+	owl.ypos = analyze(owl.ypos)
+	return owl
+end
+function analyze(owl::MatNode)
+	return owl
+end
 #
 # ========================Calc===========================
 #
@@ -456,10 +669,10 @@ function calc( owl::WithNode, env::Environment )
 	return calc( owl.body, env )
 end
 
-function calc( owl::FunDefNode, env::Environment )
+function calc(owl::FunDefNode, env::Environment)
 	return ClosureVal( owl.params, owl.body, env)
 end
-function calc( owl::FunAppNode, env::Environment )
+function calc(owl::FunAppNode, env::Environment)
 	closure = calc(owl.func, env)
 	if length(closure.params) != length(owl.args)
 		throw(LispError("Function signature mismatch"))
@@ -468,6 +681,69 @@ function calc( owl::FunAppNode, env::Environment )
 		env = CEnvironment( closure.params[i], calc( owl.args[i], env ), env )
 	end
 	return calc( closure.body, env )
+end
+function calc(owl::MatNode, env::Environment)
+	return MatrixVal(owl.mat)
+end
+
+function calc(owl::MatOpNode, env::Environment)
+	matVal = calc(owl.mat)
+	mat = 0;
+	if typeof(matVal) == MatrixVal
+		try
+			mat = owl.op(matVal.n)
+		catch
+			throw(LispError("Mat Op Evaluation borked!"))
+		end
+	else
+		throw(LispError("Need to pass a MatrixVal to a MatOpNode"))
+	end
+	if typeof(mat) == Array{Float32,2}
+		return MatrixVal(mat)
+	else
+		throw(LispError("bad return value from simple_load"))
+	end
+end
+function calc(owl::MatSaveNode, env::Environment)
+	matVal = calc(owl.mat)
+	if typeof(matVal) == MatrixVal
+		try
+			simple_save(matVal.n, owl.oath)
+		catch
+			throw(LispError("Invalid path pased to simple_save"))
+		end
+	else
+		throw(LispError("Need to pass a MatrixVal to a MatSaveNode"))
+	end
+	return matVal
+end
+function calc(owl::MatLoadNode, env::Environment)
+	mat = 0
+	try
+		mat = simple_load(owl.path)
+	catch
+		throw(LispError("Invalid path pased to simple_load"))
+	end
+	if typeof(mat) == Array{Float32,2}
+		return MatrixVal(mat)
+	else
+		throw(LispError("bad return value from simple_load"))
+	end
+end
+function calc(owl::RenderTextNode, env::Environment)
+	xpos = calc(owl.xpos)
+	ypos = calc(owl.ypos)
+	mat = 0
+	if typeof(xpos) == NumVal && typeof(ypos) == NumVal
+		mat = render_text(owl.text, xpos.n, ypos.n)
+	else
+		throw(LispError("Need to pass NumVals to a MatOpNode"))
+	end
+	if typeof(mat) == Array{Float32,2}
+		return MatrixVal(mat)
+	else
+		throw(LispError("bad return value from simple_load"))
+	end
 end
 #
 # ========================Interp===========================
