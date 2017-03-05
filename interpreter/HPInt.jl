@@ -721,7 +721,8 @@ function calc(owl::MatLoadNode, env::Environment)
 	mat = 0
 	try
 		mat = simple_load(owl.path)
-	catch
+	catch e 
+		println(e)
 		throw(LispError("Invalid path pased to simple_load"))
 	end
 	if typeof(mat) == Array{Float32,2}

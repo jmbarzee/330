@@ -12,6 +12,11 @@ If0Node = HPInt.If0Node
 AndNode = HPInt.AndNode
 FunDefNode = HPInt.FunDefNode
 FunAppNode = HPInt.FunAppNode
+MatNode = HPInt.MatNode
+MatOpNode = HPInt.MatOpNode
+MatSaveNode = HPInt.MatSaveNode
+MatLoadNode = HPInt.MatLoadNode
+RenderTextNode = HPInt.RenderTextNode
 
 parse = HPInt.parse
 interp = HPInt.interp
@@ -411,9 +416,11 @@ end
 	)=#
 end
 @testset "Wingate's Tests" begin
-	@test exec("
-		(with ((base_img (render_text \"Hello\" 25 100))
-		    (swirl (simple_load \"/Users/jbarzee/all/byu/cs/330/interpreter/ex/swirl_256.png\")))
+	@test exec(
+		"(with (
+			(base_img (render_text \"Hello\" 25 100))
+		    (swirl (simple_load \"/Users/jbarzee/all/byu/cs/330/interpreter/ex/swirl_256.png\"))
+		    )
 		    (with ((ds (drop_shadow base_img)))
 		        (with ((tmp4 (+ (* (+ (min ds base_img) (- 1 base_img)) base_img) (* (- 1 base_img) swirl) )))
 		            (with ((tmp5 (- 1 (emboss tmp4)))
@@ -428,25 +435,8 @@ end
 		            )
 		        )
 		    )
-		)
-		(with ((base_img (render_text \"Hello\" 25 100))
-    (swirl (simple_load \"/Users/jbarzee/all/byu/cs/330/interpreter/ex/swirl_256.png\")))
-    (with ((ds (drop_shadow base_img)))
-        (with ((tmp4 (+ (* (+ (min ds base_img) (- 1 base_img)) base_img) (* (- 1 base_img) swirl) )))
-            (with ((tmp5 (- 1 (emboss tmp4)))
-                    (base_img2 (render_text \"world!\" 5 200)))
-                (with ((is (inner_shadow base_img2)))
-                    (with ((tmp6 (max base_img2 (* (- 1 base_img2) is) )))
-                        (with ( (output (min tmp5 tmp6 )) )
-                            (simple_save output \"output.png\")
-                        )
-                    )
-                )
-            )
-        )
-    )
-)
-	")
+		)"
+	)
 end
 @testset "Derek's Tests" begin
 	@test interp("(with () 1)") == WithNode(Dict{Symbol,OWL}(), NumNode(1))
