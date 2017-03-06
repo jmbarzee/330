@@ -1,252 +1,134 @@
+using Terp, Base.Test, Error
 
-push!(LOAD_PATH, ".")
+import 
+	Terp.OWL,
+	Terp.NumNode,
+	Terp.IdNode,
+	Terp.BinOpNode,
+	Terp.UnOpNode,
+	Terp.WithNode,
 
-using RudInt
+	Terp.parse,
+	Terp.interp,
+	Terp.exec,
+	Terp.calc,
 
-using Base.Test
+	Terp.mtEnv,
+	Terp.CEnvironment,
 
-function lexParse(str)
-  RudInt.parse(Lexer.lex(str))
+    Terp.NumVal
+# end imports
+
+@testset "RudInt" begin
+	@testset "Parsing" begin
+		@testset "Bad Parses" begin
+			@test_throws LispError parse("ayyee lmao")
+			@test_throws LispError parse([])
+			@test_throws LispError parse([1])
+			@test_throws LispError parse([1, 2])
+			@test_throws LispError parse(['a'])
+		end
+		@testset "Reserved Words" begin
+			@testset "Simple Ids" begin
+				@test_throws LispError parse([:+])
+				@test_throws LispError parse([:-])
+				@test_throws LispError parse([:*])
+				@test_throws LispError parse([:/])
+				@test_throws LispError parse([:mod])
+				@test_throws LispError parse([:collatz])
+			end
+		end 
+		@testset "Numbers" begin
+			@test parse(5) == NumNode(5)
+			@test parse(0) == NumNode(0)
+			@test parse(-1) == NumNode(-1)
+		end 
+		@testset "Plus" begin
+			@test_throws LispError parse([:+])
+			@test_throws LispError parse([:+, 1])
+			#====== Lines commented out because functionality was broken intentionally with TransInt =====#
+			#@test parse([:+, 1, 2]) == BinOpNode(:+, [NumNode(1), NumNode(2)])
+			#@test_throws LispError  parse([:+, 1, 2, 3]) == AddNode([NumNode(1), NumNode(2), NumNode(3)])
+			#@test_throws LispError  parse([:+, 1, 2, 3, 4]) == AddNode([NumNode(1), NumNode(2), NumNode(3), NumNode(4)])
+			@test_throws LispError parse([:+, :a])
+			#@test parse([:+, :a, :b]) == BinOpNode(:+, [IdNode(:a), IdNode(:b)])
+			#@test_throws LispError  parse([:+, :a, :b, :c]) == AddNode([IdNode(:a), IdNode(:b), IdNode(:c)])
+			#@test_throws LispError  parse([:+, :a, :b, :c, :d]) == AddNode([IdNode(:a), IdNode(:b), IdNode(:c), IdNode(:d)])
+		end 
+		@testset "Minus" begin
+			@test_throws LispError parse([:-])
+			@test parse([:-, 1]) == UnOpNode(-, NumNode(1))
+			@test parse([:-, 1, 2]) == BinOpNode(-, NumNode(1), NumNode(2))
+			@test_throws LispError parse([:-, 1, 2, 3])
+			@test_throws LispError parse([:-, 1, 2, 3, 4])
+			@test parse([:-, :a]) == UnOpNode(-, IdNode(:a))
+			@test parse([:-, :a, :b]) == BinOpNode(-, IdNode(:a), IdNode(:b))
+			@test_throws LispError parse([:-, :a, :b, :c])
+			@test_throws LispError parse([:-, :a, :b, :c, :d])
+		end 
+		@testset "Multiply" begin
+			@test_throws LispError parse([:*])
+			@test_throws LispError parse([:*, 1])
+			@test parse([:*, 1, 2]) == BinOpNode(*, NumNode(1), NumNode(2))
+			@test_throws LispError parse([:*, 1, 2, 3])
+			@test_throws LispError parse([:*, 1, 2, 3, 4])
+			@test_throws LispError parse([:*, :a])
+			@test parse([:*, :a, :b]) == BinOpNode(*, IdNode(:a), IdNode(:b))
+			@test_throws LispError parse([:*, :a, :b, :c])
+			@test_throws LispError parse([:*, :a, :b, :c, :d])
+		end 
+		@testset "Divide" begin
+			@test_throws LispError parse([:/])
+			@test_throws LispError parse([:/, 1])
+			@test parse([:/, 1, 2]) == BinOpNode(/, NumNode(1), NumNode(2))
+			@test_throws LispError parse([:/, 1, 2, 3])
+			@test_throws LispError parse([:/, 1, 2, 3, 4])
+			@test_throws LispError parse([:/, :a])
+			@test parse([:/, :a, :b]) == BinOpNode(/, IdNode(:a), IdNode(:b))
+			@test_throws LispError parse([:/, :a, :b, :c])
+			@test_throws LispError parse([:/, :a, :b, :c, :d])
+		end 
+		@testset "Mod" begin
+			@test_throws LispError parse([:mod])
+			@test_throws LispError parse([:mod, 1])
+			@test parse([:mod, 1, 2]) == BinOpNode(mod, NumNode(1), NumNode(2))
+			@test_throws LispError parse([:mod, 1, 2, 3])
+			@test_throws LispError parse([:mod, 1, 2, 3, 4])
+			@test_throws LispError parse([:mod, :a])
+			@test parse([:mod, :a, :b]) == BinOpNode(mod, IdNode(:a), IdNode(:b))
+			@test_throws LispError parse([:mod, :a, :b, :c])
+			@test_throws LispError parse([:mod, :a, :b, :c, :d])
+		end 
+	end
+	@testset "Calc" begin
+		@testset "Numbers" begin
+			@test calc(NumNode(5)) == NumVal(5)
+		end 
+		@testset "Plus" begin
+			@test calc(BinOpNode(+, NumNode(1), NumNode(2))) == NumVal(3)
+			@test calc(BinOpNode(+, NumNode(1), BinOpNode(+, NumNode(2), NumNode(3)))) == NumVal(6)
+			@test calc(BinOpNode(+, NumNode(1), BinOpNode(+, NumNode(2), BinOpNode(+, NumNode(3), NumNode(4))))) == NumVal(10)
+		end 
+		@testset "Minus" begin
+			@test calc(UnOpNode(-, NumNode(1))) == NumVal(-1)
+			@test calc(UnOpNode(-, NumNode(1))) == NumVal(-1)
+			@test calc(BinOpNode(-, NumNode(1), NumNode(2))) == NumVal(-1)
+			@test calc(BinOpNode(-, NumNode(1), NumNode(2))) == NumVal(-1)
+		end 
+		@testset "Multiply" begin
+			@test calc(BinOpNode(*, NumNode(1), NumNode(2))) == NumVal(2)
+			@test calc(BinOpNode(*, NumNode(1), NumNode(2))) == NumVal(2)
+		end 
+		@testset "Divide" begin
+			@test calc(BinOpNode(/, NumNode(1), NumNode(2))) == NumVal(1/2)
+			@test calc(BinOpNode(/, NumNode(1), NumNode(2))) == NumVal(1/2)
+			@test_throws LispError calc(BinOpNode(/, NumNode(1), NumNode(0)))
+		end 
+		@testset "Mod" begin
+			@test calc(BinOpNode(mod, NumNode(1), NumNode(2))) == NumVal(1)
+			@test calc(BinOpNode(mod, NumNode(1), NumNode(2))) == NumVal(1)
+			@test_throws LispError calc(BinOpNode(mod, NumNode(1), NumNode(0)))
+		end
+	end
 end
-
-function parseInter(str)
-  RudInt.calc(lexParse(str))
-end
-
-function removeNL(str)
-  replace(string(str), "\n", "")
-end
-
-function clean(f, param)
-  try
-    return removeNL(f(param))
-  catch Y
-    return Y
-  end
-end
-
-@testset "parse" begin
-  @testset "operators" begin
-    @testset "uniary" begin
-      @testset "negate" begin
-        @test string( clean( lexParse, "(-5)" )) == string( Error.LispError("Unrecognized Type") )
-        @test string( clean( lexParse, "(- 5)" )) == string( RudInt.UnOpNode(-,RudInt.NumNode(5)) )
-        @test string( clean( lexParse, "( - 5 )" )) == string( RudInt.UnOpNode(-,RudInt.NumNode(5)) )
-      end
-      @testset "collatz" begin
-        @test string( clean( lexParse, "(collatz5)" )) == string( RudInt.IdNode(:collatz5) )
-        @test string( clean( lexParse, "(collatz 5)" )) == string( RudInt.UnOpNode(RudInt.collatz,RudInt.NumNode(5)) )
-        @test string( clean( lexParse, "( collatz 5 )" )) == string( RudInt.UnOpNode(RudInt.collatz,RudInt.NumNode(5)) )
-      end
-    end
-    @testset "binary" begin
-      @testset "add" begin
-        @test string( clean( lexParse, "(+51)" )) == string( Error.LispError("Unrecognized Type") )
-        @test string( clean( lexParse, "(+5 1)" )) == string( Error.LispError("Unrecognized Type") )
-        @test string( clean( lexParse, "(+ 51)" )) == string( Error.LispError("Improper number of arguments") )
-        @test string( clean( lexParse, "(+ 5 1)" )) == string( RudInt.BinOpNode(+,RudInt.NumNode(5),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "( + 5 1 )" )) == string( RudInt.BinOpNode(+,RudInt.NumNode(5),RudInt.NumNode(1)) )
-      end
-      @testset "subtract" begin
-        @test string( clean( lexParse, "(-51)" )) == string( Error.LispError("Unrecognized Type") )
-        @test string( clean( lexParse, "(-5 1)" )) == string( Error.LispError("Unrecognized Type") )
-        @test string( clean( lexParse, "(- 5 1)" )) == string( RudInt.BinOpNode(-,RudInt.NumNode(5),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "( - 5 1 )" )) == string( RudInt.BinOpNode(-,RudInt.NumNode(5),RudInt.NumNode(1)) )
-      end
-      @testset "multiply" begin
-        @test string( clean( lexParse, "(*51)" )) == string( Error.LispError("Incomplete Expression: *51") )
-        @test string( clean( lexParse, "(*5 1)" )) == string( Error.LispError("Incomplete Expression: *5") )
-        @test string( clean( lexParse, "(* 51)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( lexParse, "(* 5 1)" )) == string( RudInt.BinOpNode(*,RudInt.NumNode(5),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "( * 5 1 )" )) == string( RudInt.BinOpNode(*,RudInt.NumNode(5),RudInt.NumNode(1)) )
-      end
-      @testset "divide" begin
-        @test string( clean( lexParse, "(/51)" )) == string( Error.LispError("Incomplete Expression: /51") )
-        @test string( clean( lexParse, "(/5 1)" )) == string( Error.LispError("Incomplete Expression: /5") )
-        @test string( clean( lexParse, "(/ 51)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( lexParse, "(/ 5 1)" )) == string( RudInt.BinOpNode(/,RudInt.NumNode(5),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "( / 5 1 )" )) == string( RudInt.BinOpNode(/,RudInt.NumNode(5),RudInt.NumNode(1)) )
-      end
-      @testset "modulus" begin
-        @test string( clean( lexParse, "(%51)" )) == string( Error.LispError("Incomplete Expression: %51") )
-        @test string( clean( lexParse, "(%5 1)" )) == string( Error.LispError("Incomplete Expression: %5") )
-        @test string( clean( lexParse, "(% 51)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( lexParse, "(% 5 1)" )) == string( RudInt.BinOpNode(mod,RudInt.NumNode(5),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "( % 5 1 )" )) == string( RudInt.BinOpNode(mod,RudInt.NumNode(5),RudInt.NumNode(1)) )
-      end
-    end
-  end
-
-  @testset "nesting" begin
-    @testset "uinary" begin
-      @testset "negate" begin
-        @test string( clean( lexParse  , "(- (- (- 5)))" )) == string( RudInt.UnOpNode(-,RudInt.UnOpNode(-,RudInt.UnOpNode(-,RudInt.NumNode(5)))) )
-        @test string( clean( lexParse  , "( - ( - ( - 5 ) ) )" )) == string( RudInt.UnOpNode(-,RudInt.UnOpNode(-,RudInt.UnOpNode(-,RudInt.NumNode(5)))) )
-      end
-      @testset "collatz" begin
-        @test string( clean( lexParse  , "(collatz (collatz (collatz 5)))" )) == string( RudInt.UnOpNode(RudInt.collatz,RudInt.UnOpNode(RudInt.collatz,RudInt.UnOpNode(RudInt.collatz,RudInt.NumNode(5)))) )
-        @test string( clean( lexParse  , "( collatz ( collatz ( collatz 5 ) ) )" )) == string( RudInt.UnOpNode(RudInt.collatz,RudInt.UnOpNode(RudInt.collatz,RudInt.UnOpNode(RudInt.collatz,RudInt.NumNode(5)))) )
-      end
-    end
-    @testset "binary" begin
-      @testset "add" begin
-        @test string( clean( lexParse  , "(+ 1 (+ 1 1))" )) == string( RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse  , "(+ (+ 1 1) 1)" )) == string( RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.NumNode(1)) )
-        @test string( clean( lexParse  , "(+ (+ 1 1) (+ 1 1))" )) == string( RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse  , "(+ (+ 1 1) (+ (+ 1 1) (+ 1 1)))" )) == string( RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse  , "(+ (+ (+ 1 1) (+ 1 1)) (+ 1 1))" )) == string( RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse  , "(+ (+ (+ 1 1) (+ 1 1)) (+ (+ 1 1) (+ 1 1)))" )) == string( RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse  , "(+ (+ 1 (+ 1 1)) (+ 1 (+ 1 1)))" )) == string( RudInt.BinOpNode(+,RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.BinOpNode(+,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-      end
-      @testset "subtract" begin
-        @test string( clean( lexParse, "(- 1 (-  1 1))" )) == string( RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(- (- 1 1) 1)" )) == string( RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "(- (- 1 1) (- 1 1))" )) == string( RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(- (- 1 1) (- (- 1 1) (- 1 1)))" )) == string( RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(- (- (- 1 1) (- 1 1)) (- 1 1))" )) == string( RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(- (- (- 1 1) (- 1 1)) (- (- 1 1) (- 1 1)))" )) == string( RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(- ,RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(- ,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(- (- 1 (- 1 1)) (- 1 (- 1 1)))" )) == string( RudInt.BinOpNode(-,RudInt.BinOpNode(-,RudInt.NumNode(1),RudInt.BinOpNode(-,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(-,RudInt.NumNode(1),RudInt.BinOpNode(-,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-      end
-      @testset "multiply" begin
-        @test string( clean( lexParse, "(* 1 (* 1 1))" )) == string( RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(* (* 1 1) 1)" )) == string( RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "(* (* 1 1) (* 1 1))" )) == string( RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(* (* 1 1) (* (* 1 1) (* 1 1)))" )) == string( RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(* (* (* 1 1) (* 1 1)) (* 1 1))" )) == string( RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(* (* (* 1 1) (* 1 1)) (* (* 1 1) (* 1 1)))" )) == string( RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(* ,RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(* ,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(* (* 1 (* 1 1)) (* 1 (* 1 1)))" )) == string( RudInt.BinOpNode(*,RudInt.BinOpNode(*,RudInt.NumNode(1),RudInt.BinOpNode(*,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(*,RudInt.NumNode(1),RudInt.BinOpNode(*,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-      end
-      @testset "divide" begin
-        @test string( clean( lexParse, "(/ 1 (/ 1 1))" )) == string( RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(/ (/ 1 1) 1)" )) == string( RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "(/ (/ 1 1) (/ 1 1))" )) == string( RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(/ (/ 1 1) (/ (/ 1 1) (/ 1 1)))" )) == string( RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(/ (/ (/ 1 1) (/ 1 1)) (/ 1 1))" )) == string( RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(/ (/ (/ 1 1) (/ 1 1)) (/ (/ 1 1) (/ 1 1)))" )) == string( RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(/ ,RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(/ ,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(/ (/ 1 (/ 1 1)) (/ 1 (/ 1 1)))" )) == string( RudInt.BinOpNode(/,RudInt.BinOpNode(/,RudInt.NumNode(1),RudInt.BinOpNode(/,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(/,RudInt.NumNode(1),RudInt.BinOpNode(/,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-      end
-      @testset "modulus" begin
-        @test string( clean( lexParse, "(% 1 (% 1 1))" )) == string( RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(% (% 1 1) 1)" )) == string( RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.NumNode(1)) )
-        @test string( clean( lexParse, "(% (% 1 1) (% 1 1))" )) == string( RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(% (% 1 1) (% (% 1 1) (% 1 1)))" )) == string( RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(% (% (% 1 1) (% 1 1)) (% 1 1))" )) == string( RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1))) )
-        @test string( clean( lexParse, "(% (% (% 1 1) (% 1 1)) (% (% 1 1) (% 1 1)))" )) == string( RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-        @test string( clean( lexParse, "(% (% 1 (% 1 1)) (% 1 (% 1 1)))" )) == string( RudInt.BinOpNode(mod,RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1))),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.BinOpNode(mod,RudInt.NumNode(1),RudInt.NumNode(1)))) )
-      end
-    end
-  end
-end
-
-@testset "calc" begin
-  @testset "operators" begin
-    @testset "uniary" begin
-      @testset "negate" begin
-        @test string( clean( parseInter , "(-5)" )) == string( Error.LispError("No matching op") )
-        @test string( clean( parseInter , "(- 5)" )) == string( -5 )
-        @test string( clean( parseInter , "( - 5 )" )) == string( -5 )
-      end
-      @testset "collatz" begin
-        @test string( clean( parseInter , "(collatz5)" )) == string( Error.LispError("No matching op") )
-        @test string( clean( parseInter , "(collatz 5)" )) == string( 5 )
-        @test string( clean( parseInter , "( collatz 5 )" )) == string( 5 )
-      end
-    end
-    @testset "binary" begin
-      @testset "add" begin
-        @test string( clean( parseInter , "(+51)" )) == string( Error.LispError("No matching op") )
-        @test string( clean( parseInter , "(+5 1)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( parseInter , "(+ 51)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( parseInter , "(+ 5 1)" )) == string( 6 )
-        @test string( clean( parseInter , "( + 5 1 )" )) == string( 6 )
-      end
-      @testset "subtract" begin
-        @test string( clean( parseInter , "(-51)" )) == string( Error.LispError("No matching op") )
-        @test string( clean( parseInter , "(-5 1)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( parseInter , "(- 5 1)" )) == string( 4 )
-        @test string( clean( parseInter , "( - 5 1 )" )) == string( 4 )
-      end
-      @testset "multiply" begin
-        @test string( clean( parseInter , "(*51)" )) == string( Error.LispError("Incomplete Expression: *51") )
-        @test string( clean( parseInter , "(*5 1)" )) == string( Error.LispError("Incomplete Expression: *5") )
-        @test string( clean( parseInter , "(* 51)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( parseInter , "(* 5 1)" )) == string( 5 )
-        @test string( clean( parseInter , "( * 5 1 )" )) == string( 5 )
-      end
-      @testset "divide" begin
-        @test string( clean( parseInter , "(/51)" )) == string( Error.LispError("Incomplete Expression: /51") )
-        @test string( clean( parseInter , "(/5 1)" )) == string( Error.LispError("Incomplete Expression: /5") )
-        @test string( clean( parseInter , "(/ 51)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( parseInter , "(/ 5 1)" )) == string( 5.0 )
-        @test string( clean( parseInter , "( / 5 1 )" )) == string( 5.0 )
-      end
-      @testset "modulus" begin
-        @test string( clean( parseInter , "(%51)" )) == string( Error.LispError("Incomplete Expression: %51") )
-        @test string( clean( parseInter , "(%5 1)" )) == string( Error.LispError("Incomplete Expression: %5") )
-        @test string( clean( parseInter , "(% 51)" )) == string( Error.LispError("No matching uinary op") )
-        @test string( clean( parseInter , "(% 5 1)" )) == string( 0 )
-        @test string( clean( parseInter , "( % 5 1 )" )) == string( 0 )
-      end
-    end
-  end
-
-  @testset "nesting" begin
-    @testset "uinary" begin
-      @testset "negate" begin
-        @test string( clean( parseInter , "(- (- (- 5)))" )) == string( -5 )
-        @test string( clean( parseInter , "( - ( - ( - 5 ) ) )" )) == string( -5 )
-      end
-      @testset "collatz" begin
-        @test string( clean( parseInter , "(collatz (collatz (collatz 5)))" )) == string( 5 )
-        @test string( clean( parseInter , "( collatz ( collatz ( collatz 5 ) ) )" )) == string( 5 )
-      end
-    end
-    @testset "binary" begin
-      @testset "add" begin
-        @test string( clean( parseInter , "(+ 1 (+ 1 1))" )) == string( 3 )
-        @test string( clean( parseInter , "(+ (+ 1 1) 1)" )) == string( 3 )
-        @test string( clean( parseInter , "(+ (+ 1 1) (+ 1 1))" )) == string( 4 )
-        @test string( clean( parseInter , "(+ (+ 1 1) (+ (+ 1 1) (+ 1 1)))" )) == string( 6 )
-        @test string( clean( parseInter , "(+ (+ (+ 1 1) (+ 1 1)) (+ 1 1))" )) == string( 6 )
-        @test string( clean( parseInter , "(+ (+ (+ 1 1) (+ 1 1)) (+ (+ 1 1) (+ 1 1)))" )) == string( 8 )
-        @test string( clean( parseInter , "(+ (+ 1 (+ 1 1)) (+ 1 (+ 1 1)))" )) == string( 6 )
-      end
-      @testset "subtract" begin
-        @test string( clean( parseInter , "(- 1 (-  1 1))" )) == string( 1 )
-        @test string( clean( parseInter , "(- (- 1 1) 1)" )) == string( -1 )
-        @test string( clean( parseInter , "(- (- 1 1) (- 1 1))" )) == string( 0 )
-        @test string( clean( parseInter , "(- (- 1 1) (- (- 1 1) (- 1 1)))" )) == string( 0 )
-        @test string( clean( parseInter , "(- (- (- 1 1) (- 1 1)) (- 1 1))" )) == string( 0 )
-        @test string( clean( parseInter , "(- (- (- 1 1) (- 1 1)) (- (- 1 1) (- 1 1)))" )) == string( 0 )
-        @test string( clean( parseInter , "(- (- 1 (- 1 1)) (- 1 (- 1 1)))" )) == string( 0 )
-      end
-      @testset "multiply" begin
-        @test string( clean( parseInter , "(* 1 (* 1 1))" )) == string( 1 )
-        @test string( clean( parseInter , "(* (* 1 1) 1)" )) == string( 1 )
-        @test string( clean( parseInter , "(* (* 1 1) (* 1 1))" )) == string( 1 )
-        @test string( clean( parseInter , "(* (* 1 1) (* (* 1 1) (* 1 1)))" )) == string( 1 )
-        @test string( clean( parseInter , "(* (* (* 1 1) (* 1 1)) (* 1 1))" )) == string( 1 )
-        @test string( clean( parseInter , "(* (* (* 1 1) (* 1 1)) (* (* 1 1) (* 1 1)))" )) == string( 1 )
-        @test string( clean( parseInter , "(* (* 1 (* 1 1)) (* 1 (* 1 1)))" )) == string( 1 )
-      end
-      @testset "divide" begin
-        @test string( clean( parseInter , "(/ 1 (/ 1 1))" )) == string( 1.0 )
-        @test string( clean( parseInter , "(/ (/ 1 1) 1)" )) == string( 1.0 )
-        @test string( clean( parseInter , "(/ (/ 1 1) (/ 1 1))" )) == string( 1.0 )
-        @test string( clean( parseInter , "(/ (/ 1 1) (/ (/ 1 1) (/ 1 1)))" )) == string( 1.0 )
-        @test string( clean( parseInter , "(/ (/ (/ 1 1) (/ 1 1)) (/ 1 1))" )) == string( 1.0 )
-        @test string( clean( parseInter , "(/ (/ (/ 1 1) (/ 1 1)) (/ (/ 1 1) (/ 1 1)))" )) == string( 1.0 )
-        @test string( clean( parseInter , "(/ (/ 1 (/ 1 1)) (/ 1 (/ 1 1)))" )) == string( 1.0 )
-      end
-      @testset "modulus" begin
-        @test string( clean( parseInter , "(% 1 (% 1 1))" )) == string( Error.LispError("NO") )
-        @test string( clean( parseInter , "(% (% 1 1) 1)" )) == string( 0 )
-        @test string( clean( parseInter , "(% (% 1 1) (% 1 1))" )) == string( Error.LispError("NO") )
-        @test string( clean( parseInter , "(% (% 1 1) (% (% 1 1) (% 1 1)))" )) == string( Error.LispError("NO") )
-        @test string( clean( parseInter , "(% (% (% 1 1) (% 1 1)) (% 1 1))" )) == string( Error.LispError("NO") )
-        @test string( clean( parseInter , "(% (% (% 1 1) (% 1 1)) (% (% 1 1) (% 1 1)))" )) == string( Error.LispError("NO") )
-        @test string( clean( parseInter , "(% (% 1 (% 1 1)) (% 1 (% 1 1)))" )) == string( Error.LispError("NO") )
-      end
-    end
-  end
-end
+"Finished RudInt"

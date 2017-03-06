@@ -1,156 +1,133 @@
-module HPInt
+include("./dep/Error.jl")
+include("./dep/HPLexer.jl")
 
-push!(LOAD_PATH, ".")
+module Terp
 
-using Error
-using Lexer
-using Images
-using Cairo
-import Base.==
-
+using Error, Lexer
+# Exports for testing
 export parse, calc, analyze
-export NumVal, ClosureVal, MatrixVal
-
 export interp, exec
-#
-# ========================Abstracts===========================
-#
+
+# ================================================================
+# ========================Abstracts===============================
+# ================================================================
 abstract OWL
 abstract Environment
 abstract RetVal
-#
+
+# ================================================================
 # ========================Return Values===========================
-#
+# ================================================================
 type NumVal <: RetVal
 	n::Real
 end
-==(x::NumVal, y::NumVal) = x.n == y.n
-==(x::NumVal, y::Real) = x.n == y
-==(x::Real, y::NumVal) = x == y.n
 
 type ClosureVal <: RetVal
 	params::Array{Symbol}
 	body::OWL
 	env::Environment  # this is the environment at definition time!
 end
-==(x::ClosureVal, y::ClosureVal) = x.params == y.params && x.body == y.body && x.env == y.env
 
 type MatrixVal <: RetVal
 	mat::Array{Float32,2}
 end
-==(x::MatrixVal, y::MatrixVal) = x.mat == y.mat
-#
-# ========================Environments==========================
-#
+
+# ================================================================
+# ========================Environments============================
+# ================================================================
 type mtEnv <: Environment
 end
-==(x::mtEnv, y::mtEnv) = true
 
 type CEnvironment <: Environment
 	name::Symbol
 	value::RetVal
 	parent::Environment
 end
-==(x::CEnvironment, y::CEnvironment) = x.name == y.name && x.value == y.value && x.parent == y.parent
-#
-# ===================================================
-#
 
+# ================================================================
+# ==============================Nodes=============================
+# ================================================================
 type IdNode <: OWL
 	name::Symbol
 end
-==(x::IdNode, y::IdNode) = x.name == y.name
 
 type NumNode <: OWL
 		n::Real
 end
-==(x::NumNode, y::NumNode) = x.n == y.n
 
 type UnOpNode <: OWL
 	op::Function
 	val::OWL
 end
-==(x::UnOpNode, y::UnOpNode) = x.op == y.op && x.val == y.val
 
 type BinOpNode <: OWL
 	op::Function
 	lhs::OWL
 	rhs::OWL
 end
-==(x::BinOpNode, y::BinOpNode) = x.op == y.op && x.lhs == y.lhs && x.rhs == y.rhs
 
 type AddNode <: OWL
 	args::Array{OWL}
 end
-==(x::AddNode, y::AddNode) = arrayEquals(x.args, y.args)
-function arrayEquals(a::Array{OWL}, b::Array{OWL})
-	if length(a) != length(b)
-		return false
-	end
-	for i in 1:length(a)
-		if !(a[i] == b[i])
-			return false
-		end
-	end
-	return true
-end
 
+# ----------------------------------------------------------------
+# ---------------------------Logic Nodes--------------------------
 type If0Node <: OWL
 	cond::OWL
 	zero::OWL
 	nonzero::OWL
 end
-==(x::If0Node, y::If0Node) = x.cond == y.cond && x.zero == y.zero && x.nonzero == y.nonzero
 
 type AndNode <: OWL
 	args::Array{OWL}
 end
-==(x::AndNode, y::AndNode) = x.args == y.args
 
 type WithNode <: OWL
 	binds::Dict{Symbol,OWL}
 	body::OWL
 end
-==(x::WithNode, y::WithNode) = x.body == y.body && x.binds == y.binds
 
 type FunDefNode <: OWL
 	params::Array{Symbol}
 	body::OWL
 end
-==(x::FunDefNode, y::FunDefNode) = x.params == y.params && x.body == y.body
 
 type FunAppNode <: OWL
 	func::OWL
 	args::Array{OWL}
 end
-==(x::FunAppNode, y::FunAppNode) = x.func == y.func && x.args == y.args
+
+# ----------------------------------------------------------------
+# ---------------------------Matrix Nodes-------------------------
 type MatNode <: OWL
 	mat::Array{Float32,2}
 end
-==(x::MatNode, y::MatNode) = arrayEquals(x.mat, y.mat)
+
 type MatOpNode <: OWL
 	op::Function
 	mat::OWL
 end
-==(x::MatOpNode, y::MatOpNode) = x.op == y.op && x.mat == y.mat
+
 type MatSaveNode <: OWL
 	mat::OWL
 	path::String
 end
-==(x::MatSaveNode, y::MatSaveNode) = x.mat == y.mat && x.path == y.path
+
 type MatLoadNode <: OWL
 	path::String
 end
-==(x::MatLoadNode, y::MatLoadNode) = x.path == y.path
+
 type RenderTextNode <: OWL
     text::AbstractString
     xpos::OWL
     ypos::OWL
 end
-==(x::RenderTextNode, y::RenderTextNode) = x.text == y.text && x.xpos == y.xpos && x.ypos == y.ypos
-#
-# ========================Primatives===========================
-#
+
+include("./dep/typeComp.jl")
+
+# ================================================================
+# ============================Primatives==========================
+# ================================================================
 function collatz( n::Real )
 	if ( n > 0 )
 		return collatz_helper( n, 0 )
@@ -169,7 +146,8 @@ function collatz_helper( n::Real, num_iters::Int )
 		return collatz_helper( 3*n+1, num_iters+1 )
 	end
 end
-#-------------------------------------------------------------
+# ----------------------------------------------------------------
+# ------------------------Load & Save-----------------------------
 function simple_load( img_path::AbstractString )
   im = Images.load( img_path );
   tmp = Images.separate(im);
@@ -188,7 +166,8 @@ function simple_save( output::Array, img_path::AbstractString )
     write_to_png( c2, ae.fn )
     return 42
 end
-#-------------------------------------------------------------
+# ----------------------------------------------------------------
+# ---------------------Matrix Operations--------------------------
 function render_text( text_str::AbstractString, xpos, ypos )
 
   data = Matrix{UInt32}( 256, 256 );
@@ -216,7 +195,7 @@ function render_text( text_str::AbstractString, xpos, ypos )
 
   return tmp2
 end
-#-------------------------------------------------------------
+
 function emboss( img::Array )
   f = [ -2. -1. 0.
         -1.  1. 1.
@@ -227,7 +206,7 @@ function emboss( img::Array )
   es = es[1:256,1:256];
   return es    
 end
-#-------------------------------------------------------------
+
 function drop_shadow( img::Array )
   foo = convert( Array{Float32,2}, gaussian2d(5.0,[25,25]) );
   foo = foo / maximum(foo);
@@ -236,8 +215,7 @@ function drop_shadow( img::Array )
   ds = ds / sum(foo);
   return ds
 end
-#-------------------------------------------------------------
-# assumes img is black-on-white
+
 function inner_shadow( img::Array )
   foo = convert( Array{Float32,2}, gaussian2d(5.0,[25,25]) );
   foo = foo / maximum(foo);
@@ -247,9 +225,9 @@ function inner_shadow( img::Array )
   is = max( is, img );
   return is
 end
-#
-# =======================Parseing============================
-#
+# ================================================================
+# ===============================Parse============================
+# ================================================================
 function parse(expr::Any)
 	#println("parseing Any")
 	println(expr)
@@ -523,9 +501,9 @@ function parseMany(exprs::Array{})
 	end
 	return owls
 end
-#
-# ========================Analyze===========================
-#
+# ================================================================
+# =============================Analyze============================
+# ================================================================
 function analyze(owl::IdNode)
 	return owl
 end
@@ -612,9 +590,10 @@ end
 function analyze(owl::MatNode)
 	return owl
 end
-#
-# ========================Calc===========================
-#
+
+# ================================================================
+# ==============================Calc============================
+# ================================================================
 function calc(owl::IdNode, env::Environment)
 	if typeof(env) == mtEnv
 		throw(LispError("Underfined variable"))
@@ -746,10 +725,10 @@ function calc(owl::RenderTextNode, env::Environment)
 		throw(LispError("bad return value from simple_load"))
 	end
 end
-#
-# ========================Interp===========================
-#
 
+# ================================================================
+# =============================Exports============================
+# ================================================================
 function lex(cs::AbstractString)
 	return Lexer.lex(cs)
 end
@@ -771,4 +750,21 @@ end
 function calc(owl::OWL)
 	return calc(owl, mtEnv())
 end
-end # module
+
+end # module Terp
+
+
+
+# ================================================================
+# =======================Package Aliasing=========================
+# ================================================================
+module HPInt
+
+using Terp: parse, calc, analyze
+using Terp: NumVal, ClosureVal, MatrixVal
+
+# Exports for Class
+export parse, calc, analyze
+export NumVal, ClosureVal, MatrixVal
+
+end # module HPInt
