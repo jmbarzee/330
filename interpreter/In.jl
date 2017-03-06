@@ -1,5 +1,6 @@
 include("./dep/Error.jl")
 include("./dep/HPLexer.jl")
+include("./test/test.jl")
 
 module Terp
 
@@ -244,13 +245,16 @@ function parse( expr::Int64 )
 end
 
 function parse(expr::Symbol)
-		return parseId(expr)
+	return parseId(expr)
 end
 
 function parse(expr::Array{})
 	#println(expr)
 	if length(expr) == 0
 		throw(LispError("Called parse with empty array"))
+	end
+	if ndims(expr) == 2
+		return MatNode(expr)
 	end
 
 	key = expr[1];
@@ -399,7 +403,7 @@ function parse(expr::Array{})
 		if length(expr) == 3
 			param1 = parse(expr[2])
 			param2 = parse(expr[3])
-			return BinOpNode(#=TODO: check=# min, param1, param2)
+			return BinOpNode(min, param1, param2)
 		else
 			throw(LispError("Improper number of arguments to \"min\""))
 		end
@@ -407,26 +411,20 @@ function parse(expr::Array{})
 		if length(expr) == 3
 			param1 = parse(expr[2])
 			param2 = parse(expr[3])
-			return BinOpNode(#=TODO: check=# max, param1, param2)
+			return BinOpNode(max, param1, param2)
 		else
 			throw(LispError("Improper number of arguments to \"max\""))
 		end
 	elseif isa(key, Array)
-		if ndims(key) == 1
-			lambda = parse(key)
-			if typeof(lambda) != FunDefNode
-				throw(LispError("Failed lambda verification"))
-			else
-				args = parseMany(expr[2:length(expr)])
-				if length(lambda.params) != length(args)
-					throw(LispError("Failed lambda verification (call and signature don't match)"))
-				end
-				return FunAppNode(lambda, args)
-			end
-		elseif ndims(key) == 2
-			return MatNode(key)
+		lambda = parse(key)
+		if typeof(lambda) != FunDefNode
+			throw(LispError("Failed lambda verification"))
 		else
-			throw(LispError("pased a array with > 3 dims to parse"))
+			args = parseMany(expr[2:length(expr)])
+			if length(lambda.params) != length(args)
+				throw(LispError("Failed lambda verification (call and signature don't match)"))
+			end
+			return FunAppNode(lambda, args)
 		end
 	elseif typeof(key) == Symbol
 		lambdaId = parseId(key)
@@ -439,11 +437,9 @@ function parse(expr::Array{})
 			end=# #Cant run this test because the function signature can't be known without some kind of eval
 			return FunAppNode(lambdaId, args)
 		end
-	#elseif typeof(key) == Int64
-	#	return NumNode(key)
 	else
-		println(key)
-		println(typeof(key))
+		#println(key)
+		#println(typeof(key))
 		throw(LispError("Unrecognized Type"))
 	end
 end

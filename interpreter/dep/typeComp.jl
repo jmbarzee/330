@@ -50,7 +50,7 @@ import Base.==
 
 ==(x::Terp.MatSaveNode, y::Terp.MatSaveNode) = x.mat == y.mat && x.path == y.path
 
-==(x::Terp.MatLoadNode, y::Terp.MatLoadNode) = x.path == y.pathE
+==(x::Terp.MatLoadNode, y::Terp.MatLoadNode) = x.path == y.path
 
 ==(x::Terp.RenderTextNode, y::Terp.RenderTextNode) = x.text == y.text && x.xpos == y.xpos && x.ypos == y.ypos
 
@@ -59,7 +59,18 @@ import Base.==
 # ================================================================
 ==(x::Error.LispError, y::Error.LispError) = true
 
-function arrayEquals(a::Terp.Array{Terp.OWL}, b::Terp.Array{Terp.OWL})
+function arrayEquals(a::Array{Terp.OWL}, b::Array{Terp.OWL})
+    if length(a) != length(b)
+        return false
+    end
+    for i in 1:length(a)
+        if !(a[i] == b[i])
+            return false
+        end
+    end
+    return true
+end
+function arrayEquals(a::Array{Float32}, b::Array{Float32})
     if length(a) != length(b)
         return false
     end

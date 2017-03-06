@@ -38,6 +38,10 @@ import
 				@test_throws LispError parse([:collatz])
 			end
 		end 
+		@testset "Ids" begin
+			@test parse(:a) == IdNode(:a)
+			@test parse(:b) == IdNode(:b)
+		end 
 		@testset "Numbers" begin
 			@test parse(5) == NumNode(5)
 			@test parse(0) == NumNode(0)
