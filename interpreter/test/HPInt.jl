@@ -204,5 +204,112 @@ end
 			@test parse([:max, normArr(1), :a]) == BinOpNode(max, MatNode(normArr(1)), IdNode(:a))
 		end
 	end
+	@testset "Analyze" begin
+		@testset "Matrix" begin
+			@test analyze(MatNode(normArr(1))) == MatNode(normArr(1))
+			@test analyze(MatNode(normArr(2))) == MatNode(normArr(2))
+			@test analyze(MatNode(normArr(3))) == MatNode(normArr(3))
+		end 
+		@testset "Plus" begin
+			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2))])) == BinOpNode(+, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2)), MatNode(normArr(3))])) == BinOpNode(+, MatNode(normArr(1)), BinOpNode(+, MatNode(normArr(2)), MatNode(normArr(3))))
+			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2)), MatNode(normArr(3)), MatNode(normArr(4))])) == BinOpNode(+, MatNode(normArr(1)), BinOpNode(+, MatNode(normArr(2)), BinOpNode(+, MatNode(normArr(3)), MatNode(normArr(4)))))
+			@test analyze(AddNode([NumNode(1), MatNode(normArr(2))])) == BinOpNode(+, NumNode(1), MatNode(normArr(2)))
+			@test analyze(AddNode([MatNode(normArr(1)), NumNode(2)])) == BinOpNode(+, MatNode(normArr(1)), NumNode(2))
+			@test analyze(AddNode([IdNode(:a), MatNode(normArr(2))])) == BinOpNode(+, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(AddNode([MatNode(normArr(1)), IdNode(:a)])) == BinOpNode(+, MatNode(normArr(1)), IdNode(:a))
+		end
+		@testset "Minus" begin
+			@test analyze(UnOpNode(-, MatNode(normArr(1)))) == UnOpNode(-, MatNode(normArr(1)))
+			@test analyze(BinOpNode(-, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(-, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(BinOpNode(-, NumNode(1), MatNode(normArr(2)))) == BinOpNode(-, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(-, MatNode(normArr(1)), NumNode(2))) == BinOpNode(-, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(-, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(-, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(-, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(-, MatNode(normArr(1)), IdNode(:a))
+		end 
+		@testset "Multiply" begin
+			@test analyze(BinOpNode(*, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(*, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(BinOpNode(*, NumNode(1), MatNode(normArr(2)))) == BinOpNode(*, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(*, MatNode(normArr(1)), NumNode(2))) == BinOpNode(*, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(*, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(*, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(*, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(*, MatNode(normArr(1)), IdNode(:a))
+		end 
+		@testset "Divide" begin
+			@test analyze(BinOpNode(/, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(/, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(BinOpNode(/, NumNode(1), MatNode(normArr(2)))) == BinOpNode(/, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(/, MatNode(normArr(1)), NumNode(2))) == BinOpNode(/, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(/, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(/, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(/, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(/, MatNode(normArr(1)), IdNode(:a))
+		end 
+		@testset "simple_load" begin
+			@test analyze(MatLoadNode("path_to_file")) == MatLoadNode("path_to_file")
+		end 
+		@testset "simple_save" begin
+			@test analyze(MatSaveNode(MatNode(normArr(1)),"path_to_file")) == MatSaveNode(MatNode(normArr(1)),"path_to_file")
+		end 
+		@testset "render_text" begin
+			@test analyze(RenderTextNode("text_to_render",NumNode(1),NumNode(2))) == RenderTextNode("text_to_render",NumNode(1),NumNode(2))
+			@test analyze(RenderTextNode("text_to_render",IdNode(:a),IdNode(:b))) == RenderTextNode("text_to_render",IdNode(:a),IdNode(:b))
+		end 
+		@testset "emboss" begin
+			@test analyze(MatOpNode(emboss, NumNode(1))) == MatOpNode(emboss, NumNode(1))
+			@test analyze(MatOpNode(emboss, IdNode(:a))) == MatOpNode(emboss, IdNode(:a))
+			@test analyze(MatOpNode(emboss, MatNode(normArr(1)))) == MatOpNode(emboss, MatNode(normArr(1)))
+		end 
+		@testset "drop_shadow" begin
+			@test analyze(MatOpNode(drop_shadow, NumNode(1))) == MatOpNode(drop_shadow, NumNode(1))
+			@test analyze(MatOpNode(drop_shadow, IdNode(:a))) == MatOpNode(drop_shadow, IdNode(:a))
+			@test analyze(MatOpNode(drop_shadow, MatNode(normArr(1)))) == MatOpNode(drop_shadow, MatNode(normArr(1)))
+		end 
+		@testset "inner_shadow" begin
+			@test analyze(MatOpNode(inner_shadow, NumNode(1))) == MatOpNode(inner_shadow, NumNode(1))
+			@test analyze(MatOpNode(inner_shadow, IdNode(:a))) == MatOpNode(inner_shadow, IdNode(:a))
+			@test analyze(MatOpNode(inner_shadow, MatNode(normArr(1)))) == MatOpNode(inner_shadow, MatNode(normArr(1)))
+		end
+		@testset "min" begin
+			@test analyze(BinOpNode(min, NumNode(1) , NumNode(2))) == BinOpNode(min, NumNode(1) , NumNode(2))
+			@test analyze(BinOpNode(min, IdNode(:a) , IdNode(:b))) == BinOpNode(min, IdNode(:a) , IdNode(:b))
+			@test analyze(BinOpNode(min, MatNode(normArr(1)) , MatNode(normArr(2)))) == BinOpNode(min, MatNode(normArr(1)) , MatNode(normArr(2)))
+			@test analyze(BinOpNode(min, NumNode(1), MatNode(normArr(2)))) == BinOpNode(min, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(min, MatNode(normArr(1)), NumNode(2))) == BinOpNode(min, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(min, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(min, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(min, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(min, MatNode(normArr(1)), IdNode(:a))
+		end 
+		@testset "max" begin
+			@test analyze(BinOpNode(max, NumNode(1) , NumNode(2))) == BinOpNode(max, NumNode(1) , NumNode(2))
+			@test analyze(BinOpNode(max, IdNode(:a) , IdNode(:b))) == BinOpNode(max, IdNode(:a) , IdNode(:b))
+			@test analyze(BinOpNode(max, MatNode(normArr(1)) , MatNode(normArr(2)))) == BinOpNode(max, MatNode(normArr(1)) , MatNode(normArr(2)))
+			@test analyze(BinOpNode(max, NumNode(1), MatNode(normArr(2)))) == BinOpNode(max, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(max, MatNode(normArr(1)), NumNode(2))) == BinOpNode(max, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(max, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(max, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(max, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(max, MatNode(normArr(1)), IdNode(:a))
+		end
+	end
+	@testset "Calc" begin
+		
+	end
+	#=@testset "Wingate's Tests" begin
+		@test exec(
+			"(with (
+				(base_img (render_text \"Hello\" 25 100))
+			    (swirl (simple_load \"/Users/jbarzee/all/byu/cs/330/interpreter/ex/swirl_256.png\"))
+			    )
+			    (with ((ds (drop_shadow base_img)))
+			        (with ((tmp4 (+ (* (+ (min ds base_img) (- 1 base_img)) base_img) (* (- 1 base_img) swirl) )))
+			            (with ((tmp5 (- 1 (emboss tmp4)))
+			                    (base_img2 (render_text \"world!\" 5 200)))
+			                (with ((is (inner_shadow base_img2)))
+			                    (with ((tmp6 (max base_img2 (* (- 1 base_img2) is) )))
+			                        (with ( (output (min tmp5 tmp6 )) )
+			                            (simple_save output \"output.png\")
+			                        )
+			                    )
+			                )
+			            )
+			        )
+			    )
+			)"
+		)
+	end=#
 end
 "Finished HPInt"
