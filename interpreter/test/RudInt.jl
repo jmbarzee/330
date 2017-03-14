@@ -62,33 +62,33 @@ import
 		@testset "Minus" begin
 			@test_throws LispError parse([:-])
 			@test parse([:-, 1]) == UnOpNode(-, NumNode(1))
-			@test parse([:-, 1, 2]) == BinOpNode(-, NumNode(1), NumNode(2))
+			@test parse([:-, 1, 2]) == BinOpNode(.-, NumNode(1), NumNode(2))
 			@test_throws LispError parse([:-, 1, 2, 3])
 			@test_throws LispError parse([:-, 1, 2, 3, 4])
 			@test parse([:-, :a]) == UnOpNode(-, IdNode(:a))
-			@test parse([:-, :a, :b]) == BinOpNode(-, IdNode(:a), IdNode(:b))
+			@test parse([:-, :a, :b]) == BinOpNode(.-, IdNode(:a), IdNode(:b))
 			@test_throws LispError parse([:-, :a, :b, :c])
 			@test_throws LispError parse([:-, :a, :b, :c, :d])
 		end 
 		@testset "Multiply" begin
 			@test_throws LispError parse([:*])
 			@test_throws LispError parse([:*, 1])
-			@test parse([:*, 1, 2]) == BinOpNode(*, NumNode(1), NumNode(2))
+			@test parse([:*, 1, 2]) == BinOpNode(.*, NumNode(1), NumNode(2))
 			@test_throws LispError parse([:*, 1, 2, 3])
 			@test_throws LispError parse([:*, 1, 2, 3, 4])
 			@test_throws LispError parse([:*, :a])
-			@test parse([:*, :a, :b]) == BinOpNode(*, IdNode(:a), IdNode(:b))
+			@test parse([:*, :a, :b]) == BinOpNode(.*, IdNode(:a), IdNode(:b))
 			@test_throws LispError parse([:*, :a, :b, :c])
 			@test_throws LispError parse([:*, :a, :b, :c, :d])
 		end 
 		@testset "Divide" begin
 			@test_throws LispError parse([:/])
 			@test_throws LispError parse([:/, 1])
-			@test parse([:/, 1, 2]) == BinOpNode(/, NumNode(1), NumNode(2))
+			@test parse([:/, 1, 2]) == BinOpNode(./, NumNode(1), NumNode(2))
 			@test_throws LispError parse([:/, 1, 2, 3])
 			@test_throws LispError parse([:/, 1, 2, 3, 4])
 			@test_throws LispError parse([:/, :a])
-			@test parse([:/, :a, :b]) == BinOpNode(/, IdNode(:a), IdNode(:b))
+			@test parse([:/, :a, :b]) == BinOpNode(./, IdNode(:a), IdNode(:b))
 			@test_throws LispError parse([:/, :a, :b, :c])
 			@test_throws LispError parse([:/, :a, :b, :c, :d])
 		end 
@@ -109,24 +109,24 @@ import
 			@test calc(NumNode(5)) == NumVal(5)
 		end 
 		@testset "Plus" begin
-			@test calc(BinOpNode(+, NumNode(1), NumNode(2))) == NumVal(3)
-			@test calc(BinOpNode(+, NumNode(1), BinOpNode(+, NumNode(2), NumNode(3)))) == NumVal(6)
-			@test calc(BinOpNode(+, NumNode(1), BinOpNode(+, NumNode(2), BinOpNode(+, NumNode(3), NumNode(4))))) == NumVal(10)
+			@test calc(BinOpNode(.+, NumNode(1), NumNode(2))) == NumVal(3)
+			@test calc(BinOpNode(.+, NumNode(1), BinOpNode(.+, NumNode(2), NumNode(3)))) == NumVal(6)
+			@test calc(BinOpNode(.+, NumNode(1), BinOpNode(.+, NumNode(2), BinOpNode(.+, NumNode(3), NumNode(4))))) == NumVal(10)
 		end 
 		@testset "Minus" begin
 			@test calc(UnOpNode(-, NumNode(1))) == NumVal(-1)
 			@test calc(UnOpNode(-, NumNode(1))) == NumVal(-1)
-			@test calc(BinOpNode(-, NumNode(1), NumNode(2))) == NumVal(-1)
-			@test calc(BinOpNode(-, NumNode(1), NumNode(2))) == NumVal(-1)
+			@test calc(BinOpNode(.-, NumNode(1), NumNode(2))) == NumVal(-1)
+			@test calc(BinOpNode(.-, NumNode(1), NumNode(2))) == NumVal(-1)
 		end 
 		@testset "Multiply" begin
-			@test calc(BinOpNode(*, NumNode(1), NumNode(2))) == NumVal(2)
-			@test calc(BinOpNode(*, NumNode(1), NumNode(2))) == NumVal(2)
+			@test calc(BinOpNode(.*, NumNode(1), NumNode(2))) == NumVal(2)
+			@test calc(BinOpNode(.*, NumNode(1), NumNode(2))) == NumVal(2)
 		end 
 		@testset "Divide" begin
-			@test calc(BinOpNode(/, NumNode(1), NumNode(2))) == NumVal(1/2)
-			@test calc(BinOpNode(/, NumNode(1), NumNode(2))) == NumVal(1/2)
-			@test_throws LispError calc(BinOpNode(/, NumNode(1), NumNode(0)))
+			@test calc(BinOpNode(./, NumNode(1), NumNode(2))) == NumVal(1/2)
+			@test calc(BinOpNode(./, NumNode(1), NumNode(2))) == NumVal(1/2)
+			@test_throws LispError calc(BinOpNode(./, NumNode(1), NumNode(0)))
 		end 
 		@testset "Mod" begin
 			@test calc(BinOpNode(mod, NumNode(1), NumNode(2))) == NumVal(1)

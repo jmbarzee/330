@@ -68,19 +68,19 @@ import
 			@test analyze(NumNode(5)) == NumNode(5)
 		end 
 		@testset "Plus" begin
-			@test analyze(AddNode([NumNode(1), NumNode(2)])) == BinOpNode(+, NumNode(1), NumNode(2))
-			@test analyze(AddNode([NumNode(1), NumNode(2), NumNode(3)])) ==  BinOpNode(+, NumNode(1), BinOpNode(+, NumNode(2), NumNode(3)))
-			@test analyze(AddNode([NumNode(1), NumNode(2), NumNode(3), NumNode(4)])) == BinOpNode(+, NumNode(1), BinOpNode(+, NumNode(2), BinOpNode(+, NumNode(3), NumNode(4))))
+			@test analyze(AddNode([NumNode(1), NumNode(2)])) == BinOpNode(.+, NumNode(1), NumNode(2))
+			@test analyze(AddNode([NumNode(1), NumNode(2), NumNode(3)])) ==  BinOpNode(.+, NumNode(1), BinOpNode(.+, NumNode(2), NumNode(3)))
+			@test analyze(AddNode([NumNode(1), NumNode(2), NumNode(3), NumNode(4)])) == BinOpNode(.+, NumNode(1), BinOpNode(.+, NumNode(2), BinOpNode(.+, NumNode(3), NumNode(4))))
 		end 
 		@testset "Minus" begin
-			@test analyze(UnOpNode(-, NumNode(1))) == UnOpNode(-, NumNode(1))
-			@test analyze(BinOpNode(-, NumNode(1), NumNode(2))) == BinOpNode(-, NumNode(1), NumNode(2))
+			@test analyze(UnOpNode(.-, NumNode(1))) == UnOpNode(.-, NumNode(1))
+			@test analyze(BinOpNode(.-, NumNode(1), NumNode(2))) == BinOpNode(.-, NumNode(1), NumNode(2))
 		end 
 		@testset "Multiply" begin
-			@test analyze(BinOpNode(*, NumNode(1), NumNode(2))) == BinOpNode(*, NumNode(1), NumNode(2))
+			@test analyze(BinOpNode(.*, NumNode(1), NumNode(2))) == BinOpNode(.*, NumNode(1), NumNode(2))
 		end 
 		@testset "Divide" begin
-			@test analyze(BinOpNode(/, NumNode(1), NumNode(2))) == BinOpNode(/, NumNode(1), NumNode(2))
+			@test analyze(BinOpNode(./, NumNode(1), NumNode(2))) == BinOpNode(./, NumNode(1), NumNode(2))
 		end 
 		@testset "Mod" begin
 			@test analyze(BinOpNode(mod, NumNode(1), NumNode(2))) == BinOpNode(mod, NumNode(1), NumNode(2))

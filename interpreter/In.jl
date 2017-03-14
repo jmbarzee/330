@@ -4,7 +4,10 @@ include("./test/test.jl")
 
 module Terp
 
-using Error, Lexer
+using Error
+using Lexer
+using Images
+using Cairo
 # Exports for testing
 export parse, calc, analyze
 export interp, exec
@@ -20,7 +23,7 @@ abstract RetVal
 # ========================Return Values===========================
 # ================================================================
 type NumVal <: RetVal
-	n::Real
+	val::Real
 end
 
 type ClosureVal <: RetVal
@@ -30,7 +33,7 @@ type ClosureVal <: RetVal
 end
 
 type MatrixVal <: RetVal
-	mat::Array{Float32,2}
+	val::Array{Float32,2}
 end
 
 # ================================================================
@@ -164,7 +167,7 @@ function simple_save( output::Array, img_path::AbstractString )
     tmpc = convert( Array{UInt32,2}, floor(output*255.0) )
     tmp_output =  tmpc + tmpc*256 + tmpc*65536 + 0xff000000
     c2 = CairoImageSurface( transpose(tmp_output), Cairo.FORMAT_ARGB32 )
-    write_to_png( c2, ae.fn )
+    write_to_png( c2, img_path)
     return 42
 end
 # ----------------------------------------------------------------
@@ -209,7 +212,8 @@ function emboss( img::Array )
 end
 
 function drop_shadow( img::Array )
-  foo = convert( Array{Float32,2}, gaussian2d(5.0,[25,25]) );
+	println("fu")
+  foo = Array{Float32,2}(gaussian2d(5.0,[25,25]));
   foo = foo / maximum(foo);
   ds = conv2( foo, img );
   ds = ds[13:256+12,13:256+12];
@@ -272,7 +276,7 @@ function parse(expr::Array{})
 		elseif length(expr) == 3
 			param1 = parse(expr[2])
 			param2 = parse(expr[3])
-			return BinOpNode(-, param1, param2)
+			return BinOpNode(.-, param1, param2)
 		else
 			throw(LispError("Improper number of arguments to \"-\""))
 		end
@@ -280,7 +284,7 @@ function parse(expr::Array{})
 		if length(expr) == 3
 			param1 = parse(expr[2])
 			param2 = parse(expr[3])
-			return BinOpNode(*, param1, param2)
+			return BinOpNode(.*, param1, param2)
 		else
 			throw(LispError("Improper number of arguments to \"*\""))
 		end
@@ -288,7 +292,7 @@ function parse(expr::Array{})
 		if length(expr) == 3
 			param1 = parse(expr[2])
 			param2 = parse(expr[3])
-			return BinOpNode(/, param1, param2)
+			return BinOpNode(./, param1, param2)
 		else
 			throw(LispError("Improper number of arguments to \"/\""))
 		end
@@ -519,12 +523,12 @@ function analyze(owl::AddNode)
 	if length(owl.args) == 2 
 		arg1 = analyze(owl.args[1])
 		arg2 = analyze(owl.args[2])
-		return BinOpNode(+, arg1, arg2)
+		return BinOpNode(.+, arg1, arg2)
 	elseif length(owl.args) > 2
 		addNode = AddNode(owl.args[2:length(owl.args)])
 		arg2 = analyze(addNode)
 		arg1 = analyze(owl.args[1])
-		return BinOpNode(+, arg1, arg2)
+		return BinOpNode(.+, arg1, arg2)
 	end
 end
 function analyze(owl::If0Node)
@@ -601,32 +605,45 @@ function calc(owl::IdNode, env::Environment)
 end
 
 function calc( owl::NumNode, env::Environment)
-	return NumVal( owl.n )
+	return wrapVal( owl.n )
 end
 
 function calc( owl::UnOpNode, env::Environment)
 	val = calc( owl.val , env )
-	if typeof(val) != NumVal
-		throw(LispError("Can not Handle Non NumVals"))
+	if typeof(val) == NumVal
+		return wrapVal( owl.op( val.val ) )
+	elseif typeof(val) == MatrixVal
+		if owl.op == -	
+			return wrapVal( owl.op( val.val ) )
+		else
+			throw(LispError("Can not Handle type 1"))
+		end
+	else
+		throw(LispError("Can not Handle type 2"))
 	end
-	return NumVal( owl.op( val.n ) )
 end
 
 function calc( owl::BinOpNode, env::Environment )
-	lhs = calc( owl.lhs, env )
-	rhs = calc( owl.rhs, env )
-	if typeof(lhs) != NumVal
-		throw(LispError("Can not Handle Non NumVals"))
-	elseif typeof(rhs) != NumVal
-		throw(LispError("Can not Handle Non NumVals"))
-	elseif rhs == 0
-		if owl.op == /
+	lhs = @spawn calc( owl.lhs, env )
+	rhs = @spawn calc( owl.rhs, env )
+	lhs = fetch(lhs)
+	rhs = fetch(rhs)
+	if typeof(lhs) != NumVal && typeof(lhs) != MatrixVal
+		throw(LispError("Can not Handle type 3"))
+	elseif typeof(rhs) != NumVal && typeof(rhs) != MatrixVal
+		throw(LispError("Can not Handle type 4"))
+	elseif owl.op == ./
+		if rhs == 0
 			throw(LispError("Can not Divide by zero"))
-		elseif owl.op == mod
+		end
+	elseif owl.op == mod
+		if rhs == 0
 			throw(LispError("Can not Mod by zero"))
+		elseif typeof(rhs) == MatrixVal || typeof(lhs) == MatrixVal
+			throw(LispError("Can not Mod by Matrix"))
 		end
 	end
-	return NumVal( owl.op( lhs.n, rhs.n ))
+	return wrapVal(owl.op(lhs.val, rhs.val))
 end
 
 function calc(owl::If0Node, env::Environment)
@@ -653,37 +670,38 @@ function calc(owl::FunAppNode, env::Environment)
 		throw(LispError("Function signature mismatch"))
 	end
 	for i in 1:length( owl.args )
-		env = CEnvironment( closure.params[i], calc( owl.args[i], env ), env )
+		arg = calc(owl.args[i], env)
+		env = CEnvironment( closure.params[i], arg, env )
 	end
 	return calc( closure.body, env )
 end
 function calc(owl::MatNode, env::Environment)
-	return MatrixVal(owl.mat)
+	return wrapVal(owl.mat)
 end
 
 function calc(owl::MatOpNode, env::Environment)
-	matVal = calc(owl.mat)
+	matVal = calc(owl.mat, env)
 	mat = 0;
 	if typeof(matVal) == MatrixVal
-		try
-			mat = owl.op(matVal.n)
-		catch
-			throw(LispError("Mat Op Evaluation borked!"))
-		end
+		#try
+			mat = owl.op(matVal.val)
+		#catch
+		#	throw(LispError("Mat Op Evaluation borked!"))
+		#end
 	else
 		throw(LispError("Need to pass a MatrixVal to a MatOpNode"))
 	end
 	if typeof(mat) == Array{Float32,2}
-		return MatrixVal(mat)
+		return wrapVal(mat)
 	else
 		throw(LispError("bad return value from simple_load"))
 	end
 end
 function calc(owl::MatSaveNode, env::Environment)
-	matVal = calc(owl.mat)
+	matVal = calc(owl.mat, env)
 	if typeof(matVal) == MatrixVal
 		try
-			simple_save(matVal.n, owl.oath)
+			simple_save(matVal.val, owl.path)
 		catch
 			throw(LispError("Invalid path pased to simple_save"))
 		end
@@ -701,50 +719,86 @@ function calc(owl::MatLoadNode, env::Environment)
 		throw(LispError("Invalid path pased to simple_load"))
 	end
 	if typeof(mat) == Array{Float32,2}
-		return MatrixVal(mat)
+		return wrapVal(mat)
 	else
 		throw(LispError("bad return value from simple_load"))
 	end
 end
 function calc(owl::RenderTextNode, env::Environment)
-	xpos = calc(owl.xpos)
-	ypos = calc(owl.ypos)
+	xpos = @spawn calc(owl.xpos, env)
+	ypos = @spawn calc(owl.ypos, env)
 	mat = 0
+	xpos = fetch(xpos)
+	ypos = fetch(ypos)
 	if typeof(xpos) == NumVal && typeof(ypos) == NumVal
-		mat = render_text(owl.text, xpos.n, ypos.n)
+		mat = render_text(owl.text, xpos.val, ypos.val)
 	else
 		throw(LispError("Need to pass NumVals to a MatOpNode"))
 	end
 	if typeof(mat) == Array{Float32,2}
-		return MatrixVal(mat)
+		return wrapVal(mat)
 	else
 		throw(LispError("bad return value from simple_load"))
 	end
 end
 
+function wrapVal(val::Real)
+	return NumVal(val)
+end
+function wrapVal(val::Array{Float32,2})
+	return MatrixVal(val)
+end
+
 # ================================================================
 # =============================Exports============================
 # ================================================================
-function lex(cs::AbstractString)
-	return Lexer.lex(cs)
+#=				        str   lxd   ast   rst   val
+				    lex  +----->
+				 interp  +----------->
+				analyze  +----------------->
+				   exec  +----------------------->
+				   eval        +----------------->
+				  assay              +----------->
+				   calc                     +---->
+				  parse        +----->
+				analyze              +----->
+=#
+function lex(str::AbstractString)
+	lxd = Lexer.lex(str)
+	return lxd
 end
-function interp(cs::AbstractString)
-	lxd = Lexer.lex(cs)
-	return parse(lxd)
-end
-function analyze(cs::AbstractString)
-	lxd = Lexer.lex(cs)
+function interp(str::AbstractString)
+	lxd = lex(str)
 	ast = parse(lxd)
-	return analyze(ast)
+	return ast
 end
-function exec(cs::AbstractString)
-	lxd = Lexer.lex(cs)
+function analyze(str::AbstractString)
+	lxd = lex(str)
 	ast = parse(lxd)
-	cast = analyze(ast)
-	return calc(cast, mtEnv())
+	rst = analyze(ast)
+	return rst
 end
-function calc(owl::OWL)
-	return calc(owl, mtEnv())
+function exec(str::AbstractString)
+	lxd = lex(str)
+	ast = parse(lxd)
+	rst = analyze(ast)
+	val = calc(rst)
+	return val
+end
+function eval(lxd::Array{Any,1})
+	ast = parse(lxd)
+	rst = analyze(ast)
+	val = calc(rst)
+	return val
+end
+function assay(ast::OWL)
+	rst = analyze(ast)
+	val = calc(rst)
+	return val
+end
+function calc(rst::OWL)
+	val = calc(rst, mtEnv())
+	return val
 end
 
 end # module Terp

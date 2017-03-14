@@ -2,13 +2,13 @@ import Base.==
 # ================================================================
 # ========================Return Values===========================
 # ================================================================
-==(x::Terp.NumVal, y::Terp.NumVal) = x.n == y.n
-==(x::Terp.NumVal, y::Terp.Real) = x.n == y
-==(x::Terp.Real, y::Terp.NumVal) = x == y.n
+==(x::Terp.NumVal, y::Terp.NumVal) = x.val == y.val
+==(x::Terp.NumVal, y::Terp.Real) = x.val == y
+==(x::Terp.Real, y::Terp.NumVal) = x == y.val
 
 ==(x::Terp.ClosureVal, y::Terp.ClosureVal) = x.params == y.params && x.body == y.body && x.env == y.env
 
-==(x::Terp.MatrixVal, y::Terp.MatrixVal) = x.mat == y.mat
+==(x::Terp.MatrixVal, y::Terp.MatrixVal) = x.val == y.val
 
 # ================================================================
 # ========================Environments============================

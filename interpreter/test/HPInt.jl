@@ -98,25 +98,25 @@ end
 		end
 		@testset "Minus" begin
 			@test parse([:-, normArr(1)]) == UnOpNode(-, MatNode(normArr(1)))
-			@test parse([:-, normArr(1), normArr(2)]) == BinOpNode(-, MatNode(normArr(1)), MatNode(normArr(2)))
-			@test parse([:-, 1, normArr(2)]) == BinOpNode(-, NumNode(1), MatNode(normArr(2)))
-			@test parse([:-, normArr(1), 2]) == BinOpNode(-, MatNode(normArr(1)), NumNode(2))
-			@test parse([:-, :a, normArr(2)]) == BinOpNode(-, IdNode(:a), MatNode(normArr(2)))
-			@test parse([:-, normArr(1), :a]) == BinOpNode(-, MatNode(normArr(1)), IdNode(:a))
+			@test parse([:-, normArr(1), normArr(2)]) == BinOpNode(.-, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test parse([:-, 1, normArr(2)]) == BinOpNode(.-, NumNode(1), MatNode(normArr(2)))
+			@test parse([:-, normArr(1), 2]) == BinOpNode(.-, MatNode(normArr(1)), NumNode(2))
+			@test parse([:-, :a, normArr(2)]) == BinOpNode(.-, IdNode(:a), MatNode(normArr(2)))
+			@test parse([:-, normArr(1), :a]) == BinOpNode(.-, MatNode(normArr(1)), IdNode(:a))
 		end 
 		@testset "Multiply" begin
-			@test parse([:*, normArr(1), normArr(2)]) == BinOpNode(*, MatNode(normArr(1)), MatNode(normArr(2)))
-			@test parse([:*, 1, normArr(2)]) == BinOpNode(*, NumNode(1), MatNode(normArr(2)))
-			@test parse([:*, normArr(1), 2]) == BinOpNode(*, MatNode(normArr(1)), NumNode(2))
-			@test parse([:*, :a, normArr(2)]) == BinOpNode(*, IdNode(:a), MatNode(normArr(2)))
-			@test parse([:*, normArr(1), :a]) == BinOpNode(*, MatNode(normArr(1)), IdNode(:a))
+			@test parse([:*, normArr(1), normArr(2)]) == BinOpNode(.*, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test parse([:*, 1, normArr(2)]) == BinOpNode(.*, NumNode(1), MatNode(normArr(2)))
+			@test parse([:*, normArr(1), 2]) == BinOpNode(.*, MatNode(normArr(1)), NumNode(2))
+			@test parse([:*, :a, normArr(2)]) == BinOpNode(.*, IdNode(:a), MatNode(normArr(2)))
+			@test parse([:*, normArr(1), :a]) == BinOpNode(.*, MatNode(normArr(1)), IdNode(:a))
 		end 
 		@testset "Divide" begin
-			@test parse([:/, normArr(1), normArr(2)]) == BinOpNode(/, MatNode(normArr(1)), MatNode(normArr(2)))
-			@test parse([:/, 1, normArr(2)]) == BinOpNode(/, NumNode(1), MatNode(normArr(2)))
-			@test parse([:/, normArr(1), 2]) == BinOpNode(/, MatNode(normArr(1)), NumNode(2))
-			@test parse([:/, :a, normArr(2)]) == BinOpNode(/, IdNode(:a), MatNode(normArr(2)))
-			@test parse([:/, normArr(1), :a]) == BinOpNode(/, MatNode(normArr(1)), IdNode(:a))
+			@test parse([:/, normArr(1), normArr(2)]) == BinOpNode(./, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test parse([:/, 1, normArr(2)]) == BinOpNode(./, NumNode(1), MatNode(normArr(2)))
+			@test parse([:/, normArr(1), 2]) == BinOpNode(./, MatNode(normArr(1)), NumNode(2))
+			@test parse([:/, :a, normArr(2)]) == BinOpNode(./, IdNode(:a), MatNode(normArr(2)))
+			@test parse([:/, normArr(1), :a]) == BinOpNode(./, MatNode(normArr(1)), IdNode(:a))
 		end 
 		@testset "simple_load" begin
 			@test_throws LispError parse([:simple_load])
@@ -211,35 +211,35 @@ end
 			@test analyze(MatNode(normArr(3))) == MatNode(normArr(3))
 		end 
 		@testset "Plus" begin
-			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2))])) == BinOpNode(+, MatNode(normArr(1)), MatNode(normArr(2)))
-			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2)), MatNode(normArr(3))])) == BinOpNode(+, MatNode(normArr(1)), BinOpNode(+, MatNode(normArr(2)), MatNode(normArr(3))))
-			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2)), MatNode(normArr(3)), MatNode(normArr(4))])) == BinOpNode(+, MatNode(normArr(1)), BinOpNode(+, MatNode(normArr(2)), BinOpNode(+, MatNode(normArr(3)), MatNode(normArr(4)))))
-			@test analyze(AddNode([NumNode(1), MatNode(normArr(2))])) == BinOpNode(+, NumNode(1), MatNode(normArr(2)))
-			@test analyze(AddNode([MatNode(normArr(1)), NumNode(2)])) == BinOpNode(+, MatNode(normArr(1)), NumNode(2))
-			@test analyze(AddNode([IdNode(:a), MatNode(normArr(2))])) == BinOpNode(+, IdNode(:a), MatNode(normArr(2)))
-			@test analyze(AddNode([MatNode(normArr(1)), IdNode(:a)])) == BinOpNode(+, MatNode(normArr(1)), IdNode(:a))
+			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2))])) == BinOpNode(.+, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2)), MatNode(normArr(3))])) == BinOpNode(.+, MatNode(normArr(1)), BinOpNode(.+, MatNode(normArr(2)), MatNode(normArr(3))))
+			@test analyze(AddNode([MatNode(normArr(1)), MatNode(normArr(2)), MatNode(normArr(3)), MatNode(normArr(4))])) == BinOpNode(.+, MatNode(normArr(1)), BinOpNode(.+, MatNode(normArr(2)), BinOpNode(.+, MatNode(normArr(3)), MatNode(normArr(4)))))
+			@test analyze(AddNode([NumNode(1), MatNode(normArr(2))])) == BinOpNode(.+, NumNode(1), MatNode(normArr(2)))
+			@test analyze(AddNode([MatNode(normArr(1)), NumNode(2)])) == BinOpNode(.+, MatNode(normArr(1)), NumNode(2))
+			@test analyze(AddNode([IdNode(:a), MatNode(normArr(2))])) == BinOpNode(.+, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(AddNode([MatNode(normArr(1)), IdNode(:a)])) == BinOpNode(.+, MatNode(normArr(1)), IdNode(:a))
 		end
 		@testset "Minus" begin
-			@test analyze(UnOpNode(-, MatNode(normArr(1)))) == UnOpNode(-, MatNode(normArr(1)))
-			@test analyze(BinOpNode(-, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(-, MatNode(normArr(1)), MatNode(normArr(2)))
-			@test analyze(BinOpNode(-, NumNode(1), MatNode(normArr(2)))) == BinOpNode(-, NumNode(1), MatNode(normArr(2)))
-			@test analyze(BinOpNode(-, MatNode(normArr(1)), NumNode(2))) == BinOpNode(-, MatNode(normArr(1)), NumNode(2))
-			@test analyze(BinOpNode(-, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(-, IdNode(:a), MatNode(normArr(2)))
-			@test analyze(BinOpNode(-, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(-, MatNode(normArr(1)), IdNode(:a))
+			@test analyze(UnOpNode(.-, MatNode(normArr(1)))) == UnOpNode(.-, MatNode(normArr(1)))
+			@test analyze(BinOpNode(.-, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(.-, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(BinOpNode(.-, NumNode(1), MatNode(normArr(2)))) == BinOpNode(.-, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(.-, MatNode(normArr(1)), NumNode(2))) == BinOpNode(.-, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(.-, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(.-, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(.-, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(.-, MatNode(normArr(1)), IdNode(:a))
 		end 
 		@testset "Multiply" begin
-			@test analyze(BinOpNode(*, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(*, MatNode(normArr(1)), MatNode(normArr(2)))
-			@test analyze(BinOpNode(*, NumNode(1), MatNode(normArr(2)))) == BinOpNode(*, NumNode(1), MatNode(normArr(2)))
-			@test analyze(BinOpNode(*, MatNode(normArr(1)), NumNode(2))) == BinOpNode(*, MatNode(normArr(1)), NumNode(2))
-			@test analyze(BinOpNode(*, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(*, IdNode(:a), MatNode(normArr(2)))
-			@test analyze(BinOpNode(*, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(*, MatNode(normArr(1)), IdNode(:a))
+			@test analyze(BinOpNode(.*, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(.*, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(BinOpNode(.*, NumNode(1), MatNode(normArr(2)))) == BinOpNode(.*, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(.*, MatNode(normArr(1)), NumNode(2))) == BinOpNode(.*, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(.*, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(.*, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(.*, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(.*, MatNode(normArr(1)), IdNode(:a))
 		end 
 		@testset "Divide" begin
-			@test analyze(BinOpNode(/, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(/, MatNode(normArr(1)), MatNode(normArr(2)))
-			@test analyze(BinOpNode(/, NumNode(1), MatNode(normArr(2)))) == BinOpNode(/, NumNode(1), MatNode(normArr(2)))
-			@test analyze(BinOpNode(/, MatNode(normArr(1)), NumNode(2))) == BinOpNode(/, MatNode(normArr(1)), NumNode(2))
-			@test analyze(BinOpNode(/, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(/, IdNode(:a), MatNode(normArr(2)))
-			@test analyze(BinOpNode(/, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(/, MatNode(normArr(1)), IdNode(:a))
+			@test analyze(BinOpNode(./, MatNode(normArr(1)), MatNode(normArr(2)))) == BinOpNode(./, MatNode(normArr(1)), MatNode(normArr(2)))
+			@test analyze(BinOpNode(./, NumNode(1), MatNode(normArr(2)))) == BinOpNode(./, NumNode(1), MatNode(normArr(2)))
+			@test analyze(BinOpNode(./, MatNode(normArr(1)), NumNode(2))) == BinOpNode(./, MatNode(normArr(1)), NumNode(2))
+			@test analyze(BinOpNode(./, IdNode(:a), MatNode(normArr(2)))) == BinOpNode(./, IdNode(:a), MatNode(normArr(2)))
+			@test analyze(BinOpNode(./, MatNode(normArr(1)), IdNode(:a))) == BinOpNode(./, MatNode(normArr(1)), IdNode(:a))
 		end 
 		@testset "simple_load" begin
 			@test analyze(MatLoadNode("path_to_file")) == MatLoadNode("path_to_file")
@@ -286,13 +286,99 @@ end
 		end
 	end
 	@testset "Calc" begin
-		
+		@testset "Matrix" begin
+			@test calc(MatNode(normArr(1))) == MatrixVal(normArr(1))
+			@test calc(MatNode(normArr(2))) == MatrixVal(normArr(2))
+			@test calc(MatNode(normArr(3))) == MatrixVal(normArr(3))
+		end 
+		@testset "Plus" begin
+			@test calc(BinOpNode(.+, MatNode(normArr(1)), MatNode(normArr(2)))) == MatrixVal(normArr(1) .+ normArr(2))
+			@test calc(BinOpNode(.+, MatNode(normArr(1)), BinOpNode(.+, MatNode(normArr(2)), MatNode(normArr(3))))) == MatrixVal(normArr(1) .+ normArr(2) .+ normArr(3))
+			@test calc(BinOpNode(.+, MatNode(normArr(1)), BinOpNode(.+, MatNode(normArr(2)), BinOpNode(.+, MatNode(normArr(3)), MatNode(normArr(4)))))) == MatrixVal(normArr(1) .+ normArr(2) .+ normArr(3) .+ normArr(4))
+			@test calc(BinOpNode(.+, NumNode(1), MatNode(normArr(2)))) == MatrixVal(1 .+ normArr(2))
+			@test calc(BinOpNode(.+, MatNode(normArr(1)), NumNode(2))) == MatrixVal(normArr(1) .+ 2)
+			@test_throws LispError calc(BinOpNode(.+, IdNode(:a), MatNode(normArr(2))))
+			@test_throws LispError calc(BinOpNode(.+, MatNode(normArr(1)), IdNode(:a)))
+		end
+		@testset "Minus" begin
+			@test calc(UnOpNode(-, MatNode(normArr(1)))) == MatrixVal(-normArr(1))
+			@test calc(BinOpNode(.-, MatNode(normArr(1)), MatNode(normArr(2)))) == MatrixVal(normArr(1) .- normArr(2))
+			@test calc(BinOpNode(.-, NumNode(1), MatNode(normArr(2)))) == MatrixVal(1 .- normArr(2))
+			@test calc(BinOpNode(.-, MatNode(normArr(1)), NumNode(2))) == MatrixVal(normArr(1) .- 2)
+			@test_throws LispError calc(BinOpNode(.-, IdNode(:a), MatNode(normArr(2))))
+			@test_throws LispError calc(BinOpNode(.-, MatNode(normArr(1)), IdNode(:a)))
+		end 
+		@testset "Multiply" begin
+			@test calc(BinOpNode(.*, MatNode(normArr(1)), MatNode(normArr(2)))) == MatrixVal(normArr(1) .* normArr(2))
+			@test calc(BinOpNode(.*, NumNode(2), MatNode(normArr(2)))) == MatrixVal(2 .* normArr(2))
+			@test calc(BinOpNode(.*, MatNode(normArr(1)), NumNode(2))) == MatrixVal(2 .* normArr(1))
+			@test_throws LispError calc(BinOpNode(.*, IdNode(:a), MatNode(normArr(2))))
+			@test_throws LispError calc(BinOpNode(.*, MatNode(normArr(1)), IdNode(:a)))
+		end 
+		@testset "Divide" begin
+			@test calc(BinOpNode(./, MatNode(normArr(1)), MatNode(normArr(2)))) == MatrixVal(normArr(1) ./ normArr(2))
+			@test calc(BinOpNode(./, NumNode(1), MatNode(normArr(2)))) == MatrixVal(1 ./ normArr(2))
+			@test calc(BinOpNode(./, MatNode(normArr(1)), NumNode(2))) == MatrixVal(normArr(1) ./ 2)
+			@test_throws LispError calc(BinOpNode(./, IdNode(:a), MatNode(normArr(2))))
+			@test_throws LispError calc(BinOpNode(./, MatNode(normArr(1)), IdNode(:a)))
+		end 
+		@testset "simple_load" begin
+			@test_throws LispError calc(MatLoadNode("path_to_file"))
+		end 
+		@testset "simple_save" begin
+			@test_throws LispError calc(MatSaveNode(NumNode(1),"path_to_file"))
+			@test_throws LispError calc(MatSaveNode(IdNode(:a),"path_to_file"))
+		end 
+		@testset "render_text" begin
+			@test_throws LispError calc(RenderTextNode("text_to_render",IdNode(:a),IdNode(:b)))
+		end 
+		@testset "emboss" begin
+			@test_throws LispError calc(MatOpNode(emboss, NumNode(1)))
+			@test_throws LispError calc(MatOpNode(emboss, IdNode(:a)))
+		end 
+		@testset "drop_shadow" begin
+			@test_throws LispError calc(MatOpNode(drop_shadow, NumNode(1)))
+			@test_throws LispError calc(MatOpNode(drop_shadow, IdNode(:a)))
+		end 
+		@testset "inner_shadow" begin
+			@test_throws LispError calc(MatOpNode(inner_shadow, NumNode(1)))
+			@test_throws LispError calc(MatOpNode(inner_shadow, IdNode(:a)))
+		end
+		@testset "min" begin
+			@test calc(BinOpNode(min, NumNode(1) , NumNode(2))) == NumVal(1)
+			@test_throws LispError calc(BinOpNode(min, IdNode(:a) , IdNode(:b)))
+			@test calc(BinOpNode(min, MatNode(normArr(1)) , MatNode(normArr(2)))) == MatrixVal(normArr(1))
+			@test calc(BinOpNode(min, NumNode(1), MatNode(normArr(2)))) == MatrixVal(Float32[1.0 1.0; 1.0 1.0])
+			@test calc(BinOpNode(min, MatNode(normArr(1)), NumNode(2))) == MatrixVal(Float32[0.0 1.0; 2.0 2.0])
+			@test_throws LispError calc(BinOpNode(min, IdNode(:a), MatNode(normArr(2))))
+			@test_throws LispError calc(BinOpNode(min, MatNode(normArr(1)), IdNode(:a)))
+		end 
+		@testset "max" begin
+			@test calc(BinOpNode(max, NumNode(1) , NumNode(2))) == NumVal(2)
+			@test_throws LispError calc(BinOpNode(max, IdNode(:a) , IdNode(:b)))
+			@test calc(BinOpNode(max, MatNode(normArr(1)) , MatNode(normArr(2)))) == MatrixVal(normArr(2))
+			@test calc(BinOpNode(max, NumNode(1), MatNode(normArr(2)))) == MatrixVal(normArr(2))
+			@test calc(BinOpNode(max, MatNode(normArr(1)), NumNode(2))) == MatrixVal(Float32[2.0 2.0; 3.0 4.0])
+			@test_throws LispError calc(BinOpNode(max, IdNode(:a), MatNode(normArr(2))))
+			@test_throws LispError calc(BinOpNode(max, MatNode(normArr(1)), IdNode(:a)))
+		end
 	end
-	#=@testset "Wingate's Tests" begin
-		@test exec(
+	@testset "Wingate's Tests" begin
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save cat \"./test/images/output.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (emboss cat) \"./test/images/output1.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (inner_shadow cat) \"./test/images/output2.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (drop_shadow cat) \"./test/images/output3.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (max 0.5 cat) \"./test/images/output4.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (min 0.5 cat) \"./test/images/output5.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (- 1 cat) \"./test/images/output6.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (+ cat cat) \"./test/images/output7.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (- cat cat) \"./test/images/output8.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (min (render_text \"CAT\" 40 230) cat) \"./test/images/output9.png\"))")
+		@test exec("(with ((cat (simple_load \"./test/images/cat_256.png\"))) (simple_save (* (- 1 cat) cat) \"./test/images/output.png\"))")
+		@test  exec(
 			"(with (
 				(base_img (render_text \"Hello\" 25 100))
-			    (swirl (simple_load \"/Users/jbarzee/all/byu/cs/330/interpreter/ex/swirl_256.png\"))
+			    (swirl (simple_load \"./test/images/swirl_256.png\"))
 			    )
 			    (with ((ds (drop_shadow base_img)))
 			        (with ((tmp4 (+ (* (+ (min ds base_img) (- 1 base_img)) base_img) (* (- 1 base_img) swirl) )))
@@ -301,7 +387,7 @@ end
 			                (with ((is (inner_shadow base_img2)))
 			                    (with ((tmp6 (max base_img2 (* (- 1 base_img2) is) )))
 			                        (with ( (output (min tmp5 tmp6 )) )
-			                            (simple_save output \"output.png\")
+			                            (simple_save output \"./test/images/swirl_output.png\")
 			                        )
 			                    )
 			                )
@@ -310,6 +396,6 @@ end
 			    )
 			)"
 		)
-	end=#
+	end
 end
-"Finished HPInt"
+@test "Finished HPInt"
