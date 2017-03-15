@@ -8,6 +8,8 @@
 % the whole thing is solved.
  
 % YOU SHOULD FILL IN THE SOLVE PROCEDURE, DOWN BELOW.
+
+:- use_module(library(lists)).
  
 digit(1).
 digit(2).
@@ -20,8 +22,8 @@ digit(8).
 digit(9).
  
 numBetween(Num, Lower, Upper) :-
-        Num >= Lower,
-        Num =< Upper.
+	Num >= Lower,
+	Num =< Upper.
  
 % cubeBounds: (RowLow, RowHigh, ColLow, ColHigh, CubeNumber)
 cubeBounds(0, 2, 0, 2, 0).
@@ -36,47 +38,47 @@ cubeBounds(6, 8, 6, 8, 8).
  
 % Given a board and the index of a column of interest (0-indexed),
 % returns the contents of the column as a list.
-% columnAsList: (Board, ColumnNumber, AsRow)
-columnAsList([], _, []).
-columnAsList([Head|Tail], ColumnNum, [Item|Rest]) :-
-        nth0(ColumnNum, Head, Item),
-        columnAsList(Tail, ColumnNum, Rest).
+% posCol: (Board, ColumnNumber, AsRow)
+posCol([], _, []).
+posCol([Head|Tail], ColumnNum, [Item|Rest]) :-
+	nth0(ColumnNum, Head, Item),
+	posCol(Tail, ColumnNum, Rest).
  
 % given which row and column we are in, gets which cube
-% is relevant.  A helper ultimately for `getCube`.
+% is relevant.  A helper ultimately for `posCube`.
 % cubeNum: (RowNum, ColNum, WhichCube)
 cubeNum(RowNum, ColNum, WhichCube) :-
-        cubeBounds(RowLow, RowHigh, ColLow, ColHigh, WhichCube),
-        numBetween(RowNum, RowLow, RowHigh),
-        numBetween(ColNum, ColLow, ColHigh).
+	cubeBounds(RowLow, RowHigh, ColLow, ColHigh, WhichCube),
+	numBetween(RowNum, RowLow, RowHigh),
+	numBetween(ColNum, ColLow, ColHigh).
  
 % Drops the first N elements from a list.  A helper ultimately
-% for `getCube`.
+% for `posCube`.
 % drop: (InputList, NumToDrop, ResultList)
 drop([], _, []):-!.
 drop(List, 0, List):-!.
 drop([_|Tail], Num, Rest) :-
-        Num > 0,
-        NewNum is Num - 1,
-        drop(Tail, NewNum, Rest).
+	Num > 0,
+	NewNum is Num - 1,
+	drop(Tail, NewNum, Rest).
  
 % Takes the first N elements from a list.  A helper ultimately
-% for `getCube`.
+% for `posCube`.
 % take: (InputList, NumToTake, ResultList)
 take([], _, []):-!.
 take(_, 0, []):-!.
 take([Head|Tail], Num, [Head|Rest]) :-
-        Num > 0,
-        NewNum is Num - 1,
-        take(Tail, NewNum, Rest).
+	Num > 0,
+	NewNum is Num - 1,
+	take(Tail, NewNum, Rest).
  
 % Gets a sublist of a list in the same order, inclusive.
-% A helper for `getCube`.
+% A helper for `posCube`.
 % sublist: (List, Start, End, NewList)
 sublist(List, Start, End, NewList) :-
-        drop(List, Start, TempList),
-        NewEnd is End - Start + 1,
-        take(TempList, NewEnd, NewList).
+	drop(List, Start, TempList),
+	NewEnd is End - Start + 1,
+	take(TempList, NewEnd, NewList).
  
 % Given a board and cube number, gets the corresponding cube as a list.
 % Cubes are 3x3 portions, numbered from the top left to the bottom right,
@@ -86,15 +88,18 @@ sublist(List, Start, End, NewList) :-
 % 3  4  5
 % 6  7  8
 %
-% getCube: (Board, CubeNumber, ContentsOfCube)
-getCube(Board, Number, AsList) :-
-        cubeBounds(RowLow, RowHigh, ColLow, ColHigh, Number),
-        sublist(Board, RowLow, RowHigh, [Row1, Row2, Row3]),
-        sublist(Row1, ColLow, ColHigh, Row1Nums),
-        sublist(Row2, ColLow, ColHigh, Row2Nums),
-        sublist(Row3, ColLow, ColHigh, Row3Nums),
-        append(Row1Nums, Row2Nums, TempRow),
-        append(TempRow, Row3Nums, AsList).
+% posCube: (Board, CubeNumber, ContentsOfCube)
+posCube(Board, Number, AsList) :-
+	cubeBounds(RowLow, RowHigh, ColLow, ColHigh, Number),
+	sublist(Board, RowLow, RowHigh, [Row1, Row2, Row3]),
+	sublist(Row1, ColLow, ColHigh, Row1Nums),
+	sublist(Row2, ColLow, ColHigh, Row2Nums),
+	sublist(Row3, ColLow, ColHigh, Row3Nums),
+	append(Row1Nums, Row2Nums, TempRow),
+	append(TempRow, Row3Nums, AsList).
+
+posRow(Board, Number, Row) :-
+	nth0(Number, Board, Row).
  
 % Given a board, solve it in-place.
 % After calling `solve` on a board, the board should be fully
@@ -103,39 +108,95 @@ getCube(Board, Number, AsList) :-
 % ---- PUT CODE HERE ---
 % ---- PUT CODE HERE ---
  
-solve(Board) :- true.  % ---PUT CODE HERE---
- 
-% ---- PUT CODE HERE ---
-% ---- PUT CODE HERE ---
+solve(Board) :- 
+    posCube(Board, 0, Cube0),
+    posCube(Board, 1, Cube1),
+    posCube(Board, 2, Cube2),
+    posCube(Board, 3, Cube3),
+    posCube(Board, 4, Cube4),
+    posCube(Board, 5, Cube5),
+    posCube(Board, 6, Cube6),
+    posCube(Board, 7, Cube7),
+    posCube(Board, 8, Cube8),
+	Cubes = [Cube0, Cube1, Cube2, Cube3, Cube4, Cube5, Cube6, Cube7, Cube8],
+
+    posCol(Board, 0, Col0),
+    posCol(Board, 1, Col1),
+    posCol(Board, 2, Col2),
+    posCol(Board, 3, Col3),
+    posCol(Board, 4, Col4),
+    posCol(Board, 5, Col5),
+    posCol(Board, 6, Col6),
+    posCol(Board, 7, Col7),
+    posCol(Board, 8, Col8),
+    Cols = [Col0, Col1, Col2, Col3, Col4, Col5, Col6, Col7, Col8],
+
+    Rows = Board,
+
+    defineRow(Cubes, Cols, Rows, 0),
+    defineRow(Cubes, Cols, Rows, 1),
+    defineRow(Cubes, Cols, Rows, 2),
+    defineRow(Cubes, Cols, Rows, 3),
+    defineRow(Cubes, Cols, Rows, 4),
+    defineRow(Cubes, Cols, Rows, 5),
+    defineRow(Cubes, Cols, Rows, 6),
+    defineRow(Cubes, Cols, Rows, 7),
+    defineRow(Cubes, Cols, Rows, 8).
+
+defineRow(Cubes, Cols, Rows, RowNum) :-
+	defineCell(Cubes, Cols, Rows, RowNum, 0),
+	defineCell(Cubes, Cols, Rows, RowNum, 1),
+	defineCell(Cubes, Cols, Rows, RowNum, 2),
+	defineCell(Cubes, Cols, Rows, RowNum, 3),
+	defineCell(Cubes, Cols, Rows, RowNum, 4),
+	defineCell(Cubes, Cols, Rows, RowNum, 5),
+	defineCell(Cubes, Cols, Rows, RowNum, 6),
+	defineCell(Cubes, Cols, Rows, RowNum, 7),
+	defineCell(Cubes, Cols, Rows, RowNum, 8).
+
+defineCell(Cubes, Cols, Rows, RowNum, ColNum) :-
+	nth0(RowNum, Rows, Row),
+	nth0(ColNum, Cols, Col),
+	nth0(ColNum, Row, Cell),
+	nth0(RowNum, Col, Cell),
+	cubeNum(RowNum, ColNum, CubeNum),
+	nth0(CubeNum, Cubes, Cube),
+	checkCell(Cell, Row, Col, Cube).
+
+checkCell(Cell, Row, Col, Cube) :-
+	(nonvar(Cell); var(Cell), digit(Cell), is_set(Row), is_set(Col), is_set(Cube)).
  
 % Prints out the given board.
 printBoard([]).
 printBoard([Head|Tail]) :-
-        write(Head), nl,
-        printBoard(Tail).
+	write(Head), nl,
+	printBoard(Tail).
  
 test1(Board) :-
-        Board = [[2, _, _, _, 8, 7, _, 5, _],
-                 [_, _, _, _, 3, 4, 9, _, 2],
-                 [_, _, 5, _, _, _, _, _, 8],
-                 [_, 6, 4, 2, 1, _, _, 7, _],
-                 [7, _, 2, _, 6, _, 1, _, 9],
-                 [_, 8, _, _, 7, 3, 2, 4, _],
-                 [8, _, _, _, _, _, 4, _, _],
-                 [3, _, 9, 7, 4, _, _, _, _],
-                 [_, 1, _, 8, 2, _, _, _, 5]],
-        solve(Board),
-        printBoard(Board).
+	Board = [[2, _, _, _, 8, 7, _, 5, _],
+		 [_, _, _, _, 3, 4, 9, _, 2],
+		 [_, _, 5, _, _, _, _, _, 8],
+		 [_, 6, 4, 2, 1, _, _, 7, _],
+		 [7, _, 2, _, 6, _, 1, _, 9],
+		 [_, 8, _, _, 7, 3, 2, 4, _],
+		 [8, _, _, _, _, _, 4, _, _],
+		 [3, _, 9, 7, 4, _, _, _, _],
+		 [_, 1, _, 8, 2, _, _, _, 5]],
+	solve(Board),
+	printBoard(Board).
  
 test2(Board) :-
-        Board = [[_, _, _, 7, 9, _, 8, _, _],
-                 [_, _, _, _, _, 4, 3, _, 7],
-                 [_, _, _, 3, _, _, _, 2, 9],
-                 [7, _, _, _, 2, _, _, _, _],
-                 [5, 1, _, _, _, _, _, 4, 8],
-                 [_, _, _, _, 5, _, _, _, 1],
-                 [1, 2, _, _, _, 8, _, _, _],
-                 [6, _, 4, 1, _, _, _, _, _],
-                 [_, _, 3, _, 6, 2, _, _, _]],
-        solve(Board),
-        printBoard(Board).
+	Board = [[_, _, _, 7, 9, _, 8, _, _],
+		 [_, _, _, _, _, 4, 3, _, 7],
+		 [_, _, _, 3, _, _, _, 2, 9],
+		 [7, _, _, _, 2, _, _, _, _],
+		 [5, 1, _, _, _, _, _, 4, 8],
+		 [_, _, _, _, 5, _, _, _, 1],
+		 [1, 2, _, _, _, 8, _, _, _],
+		 [6, _, 4, 1, _, _, _, _, _],
+		 [_, _, 3, _, 6, 2, _, _, _]],
+	solve(Board),
+	printBoard(Board).
+
+:- initialization(main).
+main :- test2(_), halt.
