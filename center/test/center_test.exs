@@ -3,8 +3,174 @@ defmodule CenterTest do
 	doctest Center
 end
 
-defmodule NameServerTest do
+defmodule TopSupervisorTest do
 	use ExUnit.Case
+	doctest TopSupervisor
+
+	test "CustomerService" do
+		IO.puts("")
+		IO.puts(" ** ** CustomerService ** **")
+		{:ok, nspid} = NameServer.start()
+		{:ok, _tspid} = TopSupervisor.start_link(nspid)
+
+		:timer.sleep(500)
+		dbpid = NameServer.resolve(nspid, :CustomerService)
+		assert :ok == GenServer.call(dbpid, {:blank})
+		Crasher.crash(nspid, :CustomerService)
+
+		:timer.sleep(500)
+		dbpid = NameServer.resolve(nspid, :CustomerService)
+		assert :ok == GenServer.call(dbpid, {:blank})
+		Crasher.crash(nspid, :CustomerService)
+
+		:timer.sleep(500)
+		dbpid = NameServer.resolve(nspid, :CustomerService)
+		assert :ok == GenServer.call(dbpid, {:blank})
+	end
+
+	test "Info" do
+		IO.puts("")
+		IO.puts(" ** **       Info      ** **")
+		{:ok, nspid} = NameServer.start()
+		{:ok, _tspid} = TopSupervisor.start_link(nspid)
+
+		:timer.sleep(500)
+		ipid = NameServer.resolve(nspid, :Info)
+		assert :ok == GenServer.call(ipid, {:blank})
+		Crasher.crash(nspid, :Info)
+
+		:timer.sleep(500)
+		ipid = NameServer.resolve(nspid, :Info)
+		assert :ok == GenServer.call(ipid, {:blank})
+		Crasher.crash(nspid, :Info)
+
+		:timer.sleep(500)
+		ipid = NameServer.resolve(nspid, :Info)
+		assert :ok == GenServer.call(ipid, {:blank})
+	end
+
+	test "Shipper" do
+		IO.puts("")
+		IO.puts(" ** **      Shipper    ** **")
+		{:ok, nspid} = NameServer.start()
+		{:ok, _tspid} = TopSupervisor.start_link(nspid)
+
+		:timer.sleep(500)
+		spid = NameServer.resolve(nspid, :Shipper)
+		assert :ok == GenServer.call(spid, {:blank})
+		Crasher.crash(nspid, :Shipper)
+
+		:timer.sleep(500)
+		spid = NameServer.resolve(nspid, :Shipper)
+		assert :ok == GenServer.call(spid, {:blank})
+		Crasher.crash(nspid, :Shipper)
+
+		:timer.sleep(500)
+		spid = NameServer.resolve(nspid, :Shipper)
+		assert :ok == GenServer.call(spid, {:blank})
+	end
+
+	test "User" do
+		IO.puts("")
+		IO.puts(" ** **       User      ** **")
+		{:ok, nspid} = NameServer.start()
+		{:ok, _tspid} = TopSupervisor.start_link(nspid)
+
+		:timer.sleep(500)
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		Crasher.crash(nspid, :User)
+
+		:timer.sleep(500)
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		Crasher.crash(nspid, :User)
+
+		:timer.sleep(500)
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+	end
+	test "Order" do 
+		IO.puts("")
+		IO.puts(" ** **       Order     ** **")
+		{:ok, nspid} = NameServer.start()
+		{:ok, _tspid} = TopSupervisor.start_link(nspid)
+
+		:timer.sleep(500)
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+		Crasher.crash(nspid, :Order)
+
+		:timer.sleep(500)
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+		Crasher.crash(nspid, :Order)
+
+		:timer.sleep(500)
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+	end
+
+	test "Database" do
+		IO.puts("")
+		IO.puts(" ** **     Database    ** **")
+		{:ok, nspid} = NameServer.start()
+		{:ok, _tspid} = TopSupervisor.start_link(nspid)
+
+		:timer.sleep(500)
+		dbpid = NameServer.resolve(nspid, :Database)
+		assert :ok == GenServer.call(dbpid, {:blank})
+		spid = NameServer.resolve(nspid, :Shipper)
+		assert :ok == GenServer.call(spid, {:blank})
+		ipid = NameServer.resolve(nspid, :Info)
+		assert :ok == GenServer.call(ipid, {:blank})
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+		Crasher.crash(nspid, :Database)
+
+		:timer.sleep(500)
+		dbpid = NameServer.resolve(nspid, :Database)
+		assert :ok == GenServer.call(dbpid, {:blank})
+		spid = NameServer.resolve(nspid, :Shipper)
+		assert :ok == GenServer.call(spid, {:blank})
+		ipid = NameServer.resolve(nspid, :Info)
+		assert :ok == GenServer.call(ipid, {:blank})
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+		Crasher.crash(nspid, :Database)
+
+		:timer.sleep(500)
+		dbpid = NameServer.resolve(nspid, :Database)
+		assert :ok == GenServer.call(dbpid, {:blank})
+		spid = NameServer.resolve(nspid, :Shipper)
+		assert :ok == GenServer.call(spid, {:blank})
+		ipid = NameServer.resolve(nspid, :Info)
+		assert :ok == GenServer.call(ipid, {:blank})
+		opid = NameServer.resolve(nspid, :Order)
+		assert :ok == GenServer.call(opid, {:blank})
+		upid = NameServer.resolve(nspid, :User)
+		assert :ok == GenServer.call(upid, {:blank})
+	end
+end
+
+defmodule NameServerTest do
+	use ExUnit.Case, async: true
 	doctest NameServer
 
 	test "init" do
@@ -41,7 +207,7 @@ defmodule NameServerTest do
 	end
 
 	test "Server test" do
-		{:ok, spid} = GenServer.start_link(NameServer, Map.new())
+		{:ok, spid} = NameServer.start()
 		pid = Kernel.self()
 		fpid = "#PID<0.9999.0>"
 		NameServer.register(spid, "fake testing process", fpid)
@@ -50,5 +216,4 @@ defmodule NameServerTest do
 		assert NameServer.resolve(spid, "fake testing process") == fpid
 		assert NameServer.resolve(spid, "bad name") == :error
 	end
-
 end

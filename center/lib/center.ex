@@ -17,6 +17,72 @@ defmodule Center do
 	end
 end
 
+defmodule TopSupervisor do
+	use Supervisor
+
+	def start_link(nameServer) do
+		Supervisor.start_link(__MODULE__, nameServer)
+	end
+
+	def init(nameServer) do
+	children = [
+		worker(DatabaseSupervisor, [nameServer]),
+		worker(CustomerService, [nameServer])
+	]
+	supervise(children, strategy: :one_for_one)
+	end
+end
+
+defmodule DatabaseSupervisor do
+	use Supervisor
+
+	def start_link(nameServer) do
+	Supervisor.start_link(__MODULE__, nameServer)
+	end
+
+	def init(nameServer) do
+	children = [
+		worker(Database, [nameServer]),
+		worker(DatabaseDepSupervisor, [nameServer])
+	]
+	supervise(children, strategy: :rest_for_one)
+	end
+end
+
+defmodule DatabaseDepSupervisor do
+	use Supervisor
+
+	def start_link(nameServer) do
+	Supervisor.start_link(__MODULE__, nameServer)
+	end
+
+	def init(nameServer) do
+	children = [
+		worker(Info, [nameServer]),
+		worker(Shipper, [nameServer]),
+		worker(InterSupervisor, [nameServer])
+	]
+	supervise(children, strategy: :one_for_one)
+	end
+end
+
+defmodule InterSupervisor do
+	use Supervisor
+
+	def start_link(nameServer) do
+	Supervisor.start_link(__MODULE__, nameServer)
+	end
+
+	def init(nameServer) do
+	children = [
+		worker(User, [nameServer]),
+		worker(Order, [nameServer])
+	]
+	supervise(children, strategy: :one_for_all)
+	end
+end
+
+
 defmodule NameServer do
 	use GenServer
 
@@ -33,7 +99,7 @@ defmodule NameServer do
 	end
 
 	def start() do
-		GenServer.start(__MODULE__, [], [])
+		GenServer.start(__MODULE__, Map.new(), [])
 	end
 
 
@@ -60,7 +126,7 @@ defmodule NameServer do
 		newRegistry = Map.put(registry, name, pid)
 		{:noreply, newRegistry}
 	end
-	
+
 	def handle_cast(request, state) do
 		super(request, state)
 	end
