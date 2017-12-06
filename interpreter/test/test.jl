@@ -5,6 +5,7 @@ function testAll()
 	testExt()
 	testTrans()
 	testHP()
+    testType()
 end
 
 function testRud() 
@@ -18,5 +19,8 @@ function testTrans()
 end
 function testHP()
 	include("./test/HPInt.jl")
+end
+function testType()
+    include("./test/TypeCheck.jl")
 end
 end
